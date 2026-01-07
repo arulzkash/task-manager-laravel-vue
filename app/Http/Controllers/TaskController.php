@@ -6,6 +6,7 @@ use App\Models\Task;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+
 class TaskController extends Controller
 {
     //
@@ -31,7 +32,8 @@ class TaskController extends Controller
 
     public function toggle(Request $request, Task $task)
     {
-        abort_if($task->user_id !== $request->user()->id, 403);
+        // abort_if($task->user_id !== $request->user()->id, 403);
+        $this->authorize('update', $task);
 
         $task->update([
             'completed' => ! $task->completed,
@@ -42,7 +44,8 @@ class TaskController extends Controller
 
     public function destroy(Request $request, Task $task)
     {
-        abort_if($task->user_id !== $request->user()->id, 403);
+        // abort_if($task->user_id !== $request->user()->id, 403);
+        $this->authorize('delete', $task);
 
         $task->delete();
 
