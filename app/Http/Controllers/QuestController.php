@@ -82,4 +82,26 @@ class QuestController extends Controller
 
         return redirect()->back();
     }
+
+    public function update(Request $request, Quest $quest)
+    {
+        $this->authorize('update', $quest);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'status' => ['required', 'in:todo,in_progress,locked'], // done gak boleh dari edit
+            'type' => ['required', 'string', 'max:100'],
+            'xp_reward' => ['required', 'integer', 'min:0'],
+            'coin_reward' => ['required', 'integer', 'min:0'],
+            'due_date' => ['nullable', 'date'],
+            'is_repeatable' => ['required', 'boolean'],
+        ]);
+
+        $data['is_repeatable'] = $request->boolean('is_repeatable');
+        $data['due_date'] = $request->input('due_date') ?: null;
+
+        $quest->update($data);
+
+        return redirect()->back();
+    }
 }

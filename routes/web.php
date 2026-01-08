@@ -91,4 +91,5 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::post('/quests', [QuestController::class, 'store']);
     Route::patch('/quests/{quest}/complete', [QuestController::class, 'complete']);
+    Route::patch('/quests/{quest}', [QuestController::class, 'update']);
 });
