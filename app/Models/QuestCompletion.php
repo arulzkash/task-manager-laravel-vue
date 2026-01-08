@@ -13,15 +13,16 @@ class QuestCompletion extends Model
         'xp_awarded',
         'coin_awarded',
         'completed_at',
+        'note'
     ];
 
     public function user()
-{
-    return $this->belongsTo(User::class);
-}
+    {
+        return $this->belongsTo(User::class);
+    }
 
-public function quest()
-{
-    return $this->belongsTo(Quest::class);
-}
+    public function quest()
+    {
+        return $this->belongsTo(Quest::class);
+    }
 }

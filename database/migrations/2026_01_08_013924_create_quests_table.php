@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('type');
             $table->integer('xp_reward');
             $table->integer('coin_reward');
+            $table->boolean('is_repeatable')->default(false);
             $table->date('due_date')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();

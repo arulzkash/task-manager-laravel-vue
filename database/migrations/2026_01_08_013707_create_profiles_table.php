@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('xp_total')->default(0);
             $table->integer('coin_balance')->default(0);
             $table->integer('current_streak')->default(0);
-            $table->date('last_quest_completed')->nullable();
+            $table->date('last_quest_completed_at')->nullable();
             $table->timestamps();
         });
     }

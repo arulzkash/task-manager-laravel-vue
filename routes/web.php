@@ -23,14 +23,16 @@
 //     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 //     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 // });
-
-require __DIR__ . '/auth.php';
-
+use App\Http\Controllers\QuestController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\Task;
+
+require __DIR__ . '/auth.php';
+
+
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard', [
@@ -52,4 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/tasks', [TaskController::class, 'store']);
     Route::patch('/tasks/{task}', [TaskController::class, 'toggle']);
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/quests', [QuestController::class, 'store']);
+    Route::patch('/quests/{quest}/complete', [QuestController::class, 'complete']);
 });
