@@ -21,6 +21,8 @@ class QuestController extends Controller
             'is_repeatable' => ['required', 'boolean'],
         ]);
 
+        $data['is_repeatable'] = $request->boolean('is_repeatable');
+
         $request->user()->quests()->create($data);
 
         return redirect()->back();
