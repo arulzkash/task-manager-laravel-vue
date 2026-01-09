@@ -187,8 +187,13 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/quests/{quest}', [QuestController::class, 'update']);
 });
 
+use App\Http\Controllers\TreasuryController;
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/treasury', [TreasuryController::class, 'index']);
+    Route::post('/treasury/rewards', [TreasuryController::class, 'storeReward']);
+    Route::patch('/treasury/rewards/{reward}/buy', [TreasuryController::class, 'buy']);
+});
 
 Route::patch('/logs/completions/{completion}', [CompletionLogController::class, 'update'])
     ->middleware(['auth']);
-
