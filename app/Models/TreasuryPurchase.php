@@ -10,10 +10,13 @@ class TreasuryPurchase extends Model
     protected $fillable = [
         'user_id',
         'treasury_reward_id',
+        'qty',
+        'unit_cost_coin',
         'cost_coin',
         'purchased_at',
         'note',
     ];
+
 
     public function user()
     {

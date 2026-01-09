@@ -13,11 +13,17 @@ const createForm = useForm({
 });
 
 const buyReward = (reward) => {
+    const qtyStr = window.prompt("Qty:", "1");
+    if (qtyStr === null) return;
+
+    const qty = parseInt(qtyStr, 10);
+    if (!Number.isInteger(qty) || qty < 1) return;
+
     const note = window.prompt("Note (optional):", "") ?? "";
 
     router.patch(
         `/treasury/rewards/${reward.id}/buy`,
-        { note },
+        { qty, note },
         {
             preserveScroll: true,
         }

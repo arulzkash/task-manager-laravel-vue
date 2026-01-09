@@ -36,26 +36,33 @@ class TreasuryController extends Controller
         abort_unless($reward->user_id === $request->user()->id, 403);
 
         $data = $request->validate([
+            'qty' => ['required', 'integer', 'min:1', 'max:999'],
             'note' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $profile = $request->user()->profile;
 
+        $qty = (int) $data['qty'];
+        $unitCost = (int) $reward->cost_coin;
+        $totalCost = $unitCost * $qty;
+
         // cek saldo
-        if ($profile->coin_balance < $reward->cost_coin) {
+        if ($profile->coin_balance < $totalCost) {
             return redirect()->back()->withErrors([
                 'coin' => 'Coin tidak cukup untuk membeli reward ini.',
             ]);
         }
 
         // kurangi coin
-        $profile->coin_balance -= $reward->cost_coin;
+        $profile->coin_balance -= $totalCost;
         $profile->save();
 
         // log purchase
         $request->user()->treasuryPurchases()->create([
             'treasury_reward_id' => $reward->id,
-            'cost_coin' => $reward->cost_coin,
+            'qty' => $qty,
+            'unit_cost_coin' => $unitCost,
+            'cost_coin' => $totalCost, // total cost (biar histori konsisten walau harga reward berubah)
             'purchased_at' => now(),
             'note' => $data['note'] ?? null,
         ]);
