@@ -1,6 +1,8 @@
 <script setup>
 import { Link, useForm, router } from "@inertiajs/vue3";
 import { ref } from "vue";
+import AppLayout from '@/Layouts/AppLayout.vue'
+defineOptions({ layout: AppLayout })
 
 const props = defineProps({
     logs: Object, // paginator
@@ -80,11 +82,7 @@ const saveEdit = () => {
             "
         >
             <h2>Treasury Purchase Log</h2>
-            <div style="display: flex; gap: 12px">
-                <Link href="/treasury">Treasury</Link>
-                <Link href="/dashboard">Dashboard</Link>
-                <Link href="/quests">Quests</Link>
-            </div>
+            
         </div>
 
         <section

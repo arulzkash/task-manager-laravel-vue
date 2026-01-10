@@ -1,6 +1,8 @@
 <script setup>
 import { Link, useForm, router } from "@inertiajs/vue3";
 import { ref } from "vue";
+import AppLayout from "@/Layouts/AppLayout.vue";
+defineOptions({ layout: AppLayout });
 
 const props = defineProps({
     quests: Object,
@@ -100,10 +102,7 @@ const resetFilters = () => {
         >
             <h2>Quests</h2>
 
-            <div style="display: flex; gap: 12px">
-                <Link href="/dashboard">Dashboard</Link>
-                <Link href="/logs/completions">Completion Log</Link>
-            </div>
+            
         </div>
 
         <p style="margin: 8px 0 16px">

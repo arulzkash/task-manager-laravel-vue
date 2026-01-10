@@ -1,6 +1,8 @@
 <script setup>
 import { Link, useForm, router } from "@inertiajs/vue3";
 import { ref } from "vue";
+import AppLayout from '@/Layouts/AppLayout.vue'
+defineOptions({ layout: AppLayout })
 
 const props = defineProps({
     logs: Object,
@@ -68,10 +70,7 @@ const setPeriod = (p) => {
             "
         >
             <h2>Completion Log</h2>
-            <div style="display: flex; gap: 12px">
-                <Link href="/dashboard">Dashboard</Link>
-                <Link href="/quests">Quests</Link>
-            </div>
+            
         </div>
 
         <section

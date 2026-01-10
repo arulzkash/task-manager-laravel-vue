@@ -1,5 +1,7 @@
 <script setup>
 import { Link, useForm, router } from "@inertiajs/vue3";
+import AppLayout from "@/Layouts/AppLayout.vue";
+defineOptions({ layout: AppLayout });
 
 const props = defineProps({
     profile: Object,
@@ -41,12 +43,7 @@ const buyReward = (reward) => {
             "
         >
             <h2>Treasury</h2>
-            <div style="display: flex; gap: 12px">
-                <Link href="/dashboard">Dashboard</Link>
-                <Link href="/quests">Quests</Link>
-                <Link href="/logs/completions">Completion Log</Link>
-                <Link href="/logs/treasury">Purchase Log</Link>
-            </div>
+            
         </div>
 
         <section style="margin: 12px 0">

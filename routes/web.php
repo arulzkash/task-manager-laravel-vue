@@ -274,4 +274,3 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/logs/treasury/{purchase}', [TreasuryPurchaseLogController::class, 'update']);
 });
-
