@@ -45,6 +45,7 @@ const buyReward = (reward) => {
                 <Link href="/dashboard">Dashboard</Link>
                 <Link href="/quests">Quests</Link>
                 <Link href="/logs/completions">Completion Log</Link>
+                <Link href="/logs/treasury">Purchase Log</Link>
             </div>
         </div>
 
