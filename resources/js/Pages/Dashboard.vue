@@ -7,6 +7,7 @@ const props = defineProps({
     profile: Object,
     activeQuests: Array,
     habits: Array,
+    habitSummary: Object,
 });
 
 const createForm = useForm({
@@ -163,6 +164,11 @@ const toggleHabit = (id) => {
         <hr />
 
         <section style="margin: 16px 0">
+            <div style="margin-bottom: 8px; opacity: 0.8">
+                Done today: {{ habitSummary?.done_today ?? 0 }} /
+                {{ habitSummary?.total ?? 0 }}
+            </div>
+
             <h3>Habits (Today)</h3>
 
             <div v-if="!habits || habits.length === 0" style="opacity: 0.7">

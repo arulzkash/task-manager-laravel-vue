@@ -15,9 +15,7 @@ class DashboardController extends Controller
 
         $habits = $user->habits()
             ->where('start_date', '<=', $today)
-            ->where(function ($q) use ($today) {
-                $q->whereNull('end_date')->orWhere('end_date', '>=', $today);
-            })
+            ->whereNull('end_date')   // ACTIVE ONLY
             ->orderBy('name')
             ->get();
 
@@ -67,10 +65,19 @@ class DashboardController extends Controller
             ];
         });
 
+        $habitsPayload = $habitsPayload->sortByDesc('streak')->values();
+
+        $doneCount = $habitsPayload->where('done_today', true)->count();
+        $totalCount = $habitsPayload->count();
+
 
         return Inertia::render('Dashboard', [
             'profile' => $user->profile,
             'habits' => $habitsPayload,
+            'habitSummary' => [
+                'done_today' => $doneCount,
+                'total' => $totalCount,
+            ],
             'activeQuests' => $user->quests()
                 ->whereIn('status', ['todo', 'in_progress'])
                 ->latest()
