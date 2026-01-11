@@ -66,8 +66,9 @@ Route::middleware('auth')->group(function () {
 
         // actions
         Route::post('/', [HabitController::class, 'store']);
-        Route::patch('/{habit}/toggle', [HabitController::class, 'toggleToday']); 
+        Route::patch('/{habit}/toggle', [HabitController::class, 'toggleToday']);
         Route::patch('/{habit}/archive', [HabitController::class, 'archive']);
+        Route::patch('/{habit}/unarchive', [HabitController::class, 'unarchive']);
 
         // monthly view toggle by date (payload date)
         Route::patch('/{habit}/entries/toggle', [HabitController::class, 'toggleDate']);

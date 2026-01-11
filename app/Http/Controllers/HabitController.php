@@ -7,6 +7,22 @@ use Illuminate\Http\Request;
 
 class HabitController extends Controller
 {
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'start_date' => ['nullable', 'date'],
+        ]);
+
+        $request->user()->habits()->create([
+            'name' => $data['name'],
+            'start_date' => $data['start_date'] ?? now()->toDateString(),
+            'end_date' => null,
+        ]);
+
+        return redirect()->back();
+    }
+
     public function toggleToday(Request $request, Habit $habit)
     {
         // ownership check
@@ -37,37 +53,6 @@ class HabitController extends Controller
                 'date' => $today,
             ]);
         }
-
-        return redirect()->back();
-    }
-
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'start_date' => ['nullable', 'date'],
-        ]);
-
-        $request->user()->habits()->create([
-            'name' => $data['name'],
-            'start_date' => $data['start_date'] ?? now()->toDateString(),
-            'end_date' => null,
-        ]);
-
-        return redirect()->back();
-    }
-
-    public function archive(Request $request, Habit $habit)
-    {
-        abort_unless($habit->user_id === $request->user()->id, 403);
-
-        if ($habit->end_date) {
-            return redirect()->back();
-        }
-
-        $habit->update([
-            'end_date' => now()->toDateString(),
-        ]);
 
         return redirect()->back();
     }
@@ -104,6 +89,36 @@ class HabitController extends Controller
                 'date' => $date,
             ]);
         }
+
+        return redirect()->back();
+    }
+
+    public function archive(Request $request, Habit $habit)
+    {
+        abort_unless($habit->user_id === $request->user()->id, 403);
+
+        if ($habit->end_date) {
+            return redirect()->back();
+        }
+
+        $habit->update([
+            'end_date' => now()->toDateString(),
+        ]);
+
+        return redirect()->back();
+    }
+
+    public function unarchive(Request $request, Habit $habit)
+    {
+        abort_unless($habit->user_id === $request->user()->id, 403);
+
+        if (is_null($habit->end_date)) {
+            return redirect()->back();
+        }
+
+        $habit->update([
+            'end_date' => null,
+        ]);
 
         return redirect()->back();
     }

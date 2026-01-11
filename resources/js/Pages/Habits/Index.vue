@@ -171,6 +171,19 @@ const setView = (view) => {
                         >
                             Archive
                         </button>
+                        <button
+                            v-if="h.end_date"
+                            type="button"
+                            @click="
+                                router.patch(
+                                    `/habits/${h.id}/unarchive`,
+                                    {},
+                                    { preserveScroll: true }
+                                )
+                            "
+                        >
+                            Unarchive
+                        </button>
                     </div>
                 </label>
             </li>
