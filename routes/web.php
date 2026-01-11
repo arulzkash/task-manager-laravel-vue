@@ -11,6 +11,7 @@ use App\Http\Controllers\QuestPageController;
 use App\Http\Controllers\CompletionLogController;
 use App\Http\Controllers\CompletionLogPageController;
 use App\Http\Controllers\HabitController;
+use App\Http\Controllers\HabitPageController;
 use App\Http\Controllers\TreasuryController;
 use App\Http\Controllers\TreasuryLogPageController;
 use App\Http\Controllers\TreasuryPurchaseLogController;
@@ -59,10 +60,17 @@ Route::middleware('auth')->group(function () {
 
     // HABIT
     Route::prefix('habits')->group(function () {
-        // Route::get('/', [HabitPageController::class, 'index']); // nanti Step 3C
-        // Route::post('/', [HabitController::class, 'store']);    // nanti Step 3C
-        Route::patch('/{habit}/toggle', [HabitController::class, 'toggleToday']);
-        // Route::patch('/{habit}/archive', [HabitController::class, 'archive']); // nanti Step 3C
+        // pages
+        Route::get('/', [HabitPageController::class, 'index']);
+        Route::get('/{habit}', [HabitPageController::class, 'show']);
+
+        // actions
+        Route::post('/', [HabitController::class, 'store']);
+        Route::patch('/{habit}/toggle', [HabitController::class, 'toggleToday']); 
+        Route::patch('/{habit}/archive', [HabitController::class, 'archive']);
+
+        // monthly view toggle by date (payload date)
+        Route::patch('/{habit}/entries/toggle', [HabitController::class, 'toggleDate']);
     });
 
     // TASKS

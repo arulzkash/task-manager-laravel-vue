@@ -18,6 +18,7 @@ import { Link } from "@inertiajs/vue3";
             <Link href="/logs/completions">Completion Log</Link>
             <Link href="/treasury">Treasury</Link>
             <Link href="/logs/treasury">Purchase Log</Link>
+            <Link href="/habits">Habits</Link>
         </nav>
 
         <main style="padding: 16px">
