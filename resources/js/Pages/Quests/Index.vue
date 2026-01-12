@@ -123,6 +123,13 @@ const resetFilters = () => {
             {{ $page.props.errors.delete }}
         </div>
 
+        <div
+            v-if="$page.props.errors?.complete"
+            style="color: #b00020; margin: 10px 0"
+        >
+            {{ $page.props.errors.complete }}
+        </div>
+
         <section
             style="
                 margin: 12px 0;

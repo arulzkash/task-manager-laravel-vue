@@ -41,6 +41,12 @@ class QuestController extends Controller
 
         $this->authorize('update', $quest);
 
+        if ($quest->status === 'locked') {
+            return redirect()->back()->withErrors([
+                'complete' => 'Quest masih locked, tidak bisa di-complete.',
+            ]);
+        }
+
         // Kalau non-repeatable dan sudah done: stop (biar gak double reward)
         if (! $quest->is_repeatable && $quest->status === 'done') {
             return redirect()->back();
