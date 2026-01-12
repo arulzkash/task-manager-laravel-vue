@@ -23,6 +23,11 @@ class QuestController extends Controller
 
         $data['is_repeatable'] = $request->boolean('is_repeatable');
 
+        // RULE: repeatable = unlimited submit => due_date harus null
+        if ($data['is_repeatable']) {
+            $data['due_date'] = null;
+        }
+
         $request->user()->quests()->create($data);
 
         return redirect()->back();

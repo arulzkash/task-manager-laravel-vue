@@ -1,6 +1,8 @@
 <script setup>
 import { useForm, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import { watch } from "vue";
+
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
@@ -48,6 +50,13 @@ const toggleHabit = (id) => {
         }
     );
 };
+
+watch(
+    () => createForm.is_repeatable,
+    (val) => {
+        if (val) createForm.due_date = null;
+    }
+);
 </script>
 
 <template>
@@ -99,8 +108,15 @@ const toggleHabit = (id) => {
                     />
                 </div>
 
-                <div>
+                <div v-if="!createForm.is_repeatable">
                     <input type="date" v-model="createForm.due_date" />
+                </div>
+
+                <div
+                    v-else
+                    style="opacity: 0.7; font-size: 13px; margin-top: 6px"
+                >
+                    Repeatable quest: due date otomatis dianggap nggak dipakai.
                 </div>
 
                 <div>
