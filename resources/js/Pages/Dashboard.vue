@@ -77,6 +77,15 @@ const addTimeblock = () => {
         },
     });
 };
+
+const deleteTimeblock = (id) => {
+    const ok = window.confirm("Delete timeblock?");
+    if (!ok) return;
+
+    router.delete(`/timeblocks/${id}`, {
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -382,6 +391,14 @@ const addTimeblock = () => {
                     >
                         {{ b.note }}
                     </div>
+
+                    <button
+                        type="button"
+                        @click="deleteTimeblock(b.id)"
+                        style="margin-top: 6px; color: #b00020"
+                    >
+                        Delete
+                    </button>
                 </li>
             </ul>
         </section>
