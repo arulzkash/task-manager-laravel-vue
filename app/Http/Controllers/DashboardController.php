@@ -11,13 +11,13 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        //profile
+        // PROFILE
 
         $profile = $user->profile;
 
         $level = $this->levelData((int) $profile->xp_total);
 
-        //habit
+        // HABIT
 
         $today = now()->toDateString();
 
@@ -78,6 +78,20 @@ class DashboardController extends Controller
         $doneCount = $habitsPayload->where('done_today', true)->count();
         $totalCount = $habitsPayload->count();
 
+        // TIMEBLOCK
+        $todayBlocks = $user->timeBlocks()
+            ->whereDate('date', $today)
+            ->orderBy('start_time')
+            ->get()
+            ->map(fn($b) => [
+                'id' => $b->id,
+                'start_time' => substr($b->start_time, 0, 5),
+                'end_time' => substr($b->end_time, 0, 5),
+                'title' => $b->title,
+                'note' => $b->note,
+            ]);
+
+
 
         return Inertia::render('Dashboard', [
             'profile' => $profile,
@@ -93,6 +107,7 @@ class DashboardController extends Controller
                 ->orderByRaw('due_date is null, due_date asc')
                 ->latest()
                 ->get(),
+            'todayBlocks' => $todayBlocks,
         ]);
     }
 

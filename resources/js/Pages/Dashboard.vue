@@ -12,6 +12,7 @@ const props = defineProps({
     habitSummary: Object,
     level: Object,
     today: String,
+    todayBlocks: Array,
 });
 
 const createForm = useForm({
@@ -256,6 +257,45 @@ watch(
                             </div>
                         </div>
                     </label>
+                </li>
+            </ul>
+        </section>
+
+        <hr />
+
+        <section style="margin: 12px 0">
+            <div
+                style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                "
+            >
+                <h3>Timeblocks (Today)</h3>
+                <Link href="/timeblocks">View all</Link>
+            </div>
+
+            <div
+                v-if="!todayBlocks || todayBlocks.length === 0"
+                style="opacity: 0.7"
+            >
+                Belum ada timeblock hari ini.
+            </div>
+
+            <ul v-else style="padding-left: 18px; margin-top: 8px">
+                <li v-for="b in todayBlocks" :key="b.id" style="margin: 8px 0">
+                    <div>
+                        <strong>{{ b.start_time }} - {{ b.end_time }}</strong> —
+                        {{ b.title }}
+                    </div>
+                    <div
+                        v-if="b.note"
+                        style="opacity: 0.7; font-size: 13px; margin-top: 2px"
+                    >
+                        {{ b.note }}
+                    </div>
                 </li>
             </ul>
         </section>
