@@ -58,6 +58,25 @@ watch(
         if (val) createForm.due_date = null;
     }
 );
+
+const timeblockForm = useForm({
+    date: props.today, // auto today dari backend
+    start_time: "09:00",
+    end_time: "10:00",
+    title: "",
+    note: "",
+});
+
+const addTimeblock = () => {
+    timeblockForm.post("/timeblocks", {
+        preserveScroll: true,
+        onSuccess: () => {
+            timeblockForm.reset("title", "note");
+            // biar date tetap hari ini
+            timeblockForm.date = props.today;
+        },
+    });
+};
 </script>
 
 <template>
@@ -276,6 +295,73 @@ watch(
                 <h3>Timeblocks (Today)</h3>
                 <Link href="/timeblocks">View all</Link>
             </div>
+
+            <form @submit.prevent="addTimeblock" style="margin-top: 10px">
+                <div
+                    style="
+                        display: flex;
+                        gap: 10px;
+                        flex-wrap: wrap;
+                        align-items: end;
+                    "
+                >
+                    <div>
+                        <div>Start</div>
+                        <input type="time" v-model="timeblockForm.start_time" />
+                        <div
+                            v-if="timeblockForm.errors.start_time"
+                            style="color: #b00020"
+                        >
+                            {{ timeblockForm.errors.start_time }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div>End</div>
+                        <input type="time" v-model="timeblockForm.end_time" />
+                        <div
+                            v-if="timeblockForm.errors.end_time"
+                            style="color: #b00020"
+                        >
+                            {{ timeblockForm.errors.end_time }}
+                        </div>
+                    </div>
+
+                    <div style="min-width: 240px; flex: 1">
+                        <div>Title</div>
+                        <input
+                            v-model="timeblockForm.title"
+                            placeholder="e.g. Deep work Laravel"
+                            style="width: 100%"
+                        />
+                        <div
+                            v-if="timeblockForm.errors.title"
+                            style="color: #b00020"
+                        >
+                            {{ timeblockForm.errors.title }}
+                        </div>
+                    </div>
+
+                    <button type="submit" :disabled="timeblockForm.processing">
+                        Add
+                    </button>
+                </div>
+
+                <div style="margin-top: 10px">
+                    <div>Note (optional)</div>
+                    <textarea
+                        v-model="timeblockForm.note"
+                        rows="2"
+                        style="width: 100%"
+                    ></textarea>
+                    <div
+                        v-if="timeblockForm.errors.note"
+                        style="color: #b00020"
+                    >
+                        {{ timeblockForm.errors.note }}
+                    </div>
+                </div>
+            </form>
 
             <div
                 v-if="!todayBlocks || todayBlocks.length === 0"
