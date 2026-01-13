@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Quest extends Model
@@ -28,5 +29,12 @@ class Quest extends Model
     public function completions()
     {
         return $this->hasMany(QuestCompletion::class);
+    }
+
+    public function scopeActive(Builder $query): void
+    {
+        $query->whereIn('status', ['todo', 'in_progress'])
+              ->orderByRaw('due_date is null, due_date asc') // Deadline paling dekat di atas, yang null di bawah
+              ->latest(); // Kalau deadline sama, yang baru dibuat di atas
     }
 }

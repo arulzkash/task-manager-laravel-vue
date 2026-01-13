@@ -97,8 +97,7 @@ class DashboardController extends Controller
                 'total' => $totalCount,
             ],
             'activeQuests' => $user->quests()
-                ->whereIn('status', ['todo', 'in_progress'])
-                ->orderByRaw('due_date is null, due_date asc')
+                ->active()
                 ->latest()
                 ->get(),
             'todayBlocks' => $todayBlocks,
