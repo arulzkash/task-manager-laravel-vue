@@ -25,7 +25,7 @@ const createForm = useForm({
     status: "todo",
     type: "Daily Grind",
     xp_reward: 50,
-    coin_reward: 10,
+    coin_reward: 50,
     due_date: null,
     is_repeatable: false,
 });

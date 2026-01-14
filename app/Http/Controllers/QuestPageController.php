@@ -15,6 +15,10 @@ class QuestPageController extends Controller
         $query = $user->quests();
 
         // FILTERS
+        if ($search = $request->query('search')) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
         if ($status = $request->query('status')) {
             $query->where('status', $status);
         }
@@ -44,6 +48,7 @@ class QuestPageController extends Controller
         return Inertia::render('Quests/Index', [
             'quests' => $query->paginate(20)->withQueryString(),
             'filters' => [
+                'search' => $request->query('search', ''),
                 'status' => $request->query('status', ''),
                 'type' => $request->query('type', ''),
                 'repeatable' => $request->query('repeatable', ''), // '' | '1' | '0'

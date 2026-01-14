@@ -18,6 +18,7 @@
         "vue": "^3.4.0"
     },
     "dependencies": {
-        "canvas-confetti": "^1.9.4"
+        "canvas-confetti": "^1.9.4",
+        "lodash": "^4.17.21"
     }
 }
