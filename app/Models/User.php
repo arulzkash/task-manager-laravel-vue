@@ -47,6 +47,24 @@ class User extends Authenticatable
         ];
     }
 
+    // --- THE MAGIC SAUCE: AUTO CREATE PROFILE ---
+    /**
+     * Method ini jalan otomatis saat Model User di-boot.
+     */
+    protected static function booted()
+    {
+        static::created(function ($user) {
+            // Setiap kali User baru berhasil dibuat (created),
+            // Kita buatkan Profile default untuk user tersebut.
+            $user->profile()->create([
+                'xp_total' => 0,
+                'coin_balance' => 0,
+                'current_streak' => 0,
+                'last_quest_completed_at' => null,
+            ]);
+        });
+    }
+
     public function tasks()
     {
         return $this->hasMany(Task::class);
