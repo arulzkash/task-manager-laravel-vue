@@ -470,5 +470,3 @@ const formatStatus = (s) => s.replace("_", " ").toUpperCase();
 @keyframes slide-up { 0% { transform: translateY(50px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
 input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
 </style>
-
-```
