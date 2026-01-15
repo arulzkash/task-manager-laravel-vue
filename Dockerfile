@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     curl
+    ca-certificates
 
 # 3. Install PHP Extensions (INI YANG KURANG TADI)
 # Kita perlu menginstall driver pdo_mysql agar bisa connect ke TiDB/MySQL
