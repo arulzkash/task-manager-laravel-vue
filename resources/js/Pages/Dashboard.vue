@@ -1,10 +1,10 @@
 <script setup>
-import { useForm, router, Link, Head } from "@inertiajs/vue3";
-import AppLayout from "@/Layouts/AppLayout.vue";
-import { watch, ref } from "vue";
-import XpProgressBar from "@/Components/Game/XpProgressBar.vue";
-import StatCard from "@/Components/Game/StatCard.vue";
-import confetti from "canvas-confetti";
+import { useForm, router, Link, Head } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue';
+import { watch, ref } from 'vue';
+import XpProgressBar from '@/Components/Game/XpProgressBar.vue';
+import StatCard from '@/Components/Game/StatCard.vue';
+import confetti from 'canvas-confetti';
 
 defineOptions({ layout: AppLayout });
 
@@ -24,9 +24,9 @@ const showCreateQuestForm = ref(false);
 const isCustomType = ref(false);
 
 const createForm = useForm({
-    name: "",
-    status: "todo",
-    type: "Daily Grind",
+    name: '',
+    status: 'todo',
+    type: 'Daily Grind',
     xp_reward: 50,
     coin_reward: 50,
     due_date: null,
@@ -34,29 +34,29 @@ const createForm = useForm({
 });
 
 const handleTypeChange = (event) => {
-    if (event.target.value === "Custom") {
+    if (event.target.value === 'Custom') {
         isCustomType.value = true;
-        createForm.type = "";
+        createForm.type = '';
     }
 };
 
 const cancelCustomType = () => {
     isCustomType.value = false;
-    createForm.type = "Daily Grind";
+    createForm.type = 'Daily Grind';
 };
 
 const submitQuest = () => {
-    createForm.post("/quests", {
+    createForm.post('/quests', {
         preserveScroll: true,
         onSuccess: () => {
-            createForm.reset("name", "xp_reward", "coin_reward", "due_date");
-            createForm.type = "Daily Grind";
+            createForm.reset('name', 'xp_reward', 'coin_reward', 'due_date');
+            createForm.type = 'Daily Grind';
             createForm.is_repeatable = false;
             isCustomType.value = false;
 
             showCreateQuestForm.value = false;
 
-            showToast("⚔️ Quest Posted to Board!");
+            showToast('⚔️ Quest Posted to Board!');
             triggerConfettiSmall();
         },
     });
@@ -72,7 +72,7 @@ watch(
 // --- QUEST COMPLETION LOGIC ---
 const completeForms = {};
 const getCompleteForm = (id) => {
-    if (!completeForms[id]) completeForms[id] = useForm({ note: "" });
+    if (!completeForms[id]) completeForms[id] = useForm({ note: '' });
     return completeForms[id];
 };
 
@@ -81,7 +81,7 @@ const completeQuest = (id, xpReward, coinReward) => {
     form.patch(`/quests/${id}/complete`, {
         preserveScroll: true,
         onSuccess: () => {
-            form.reset("note");
+            form.reset('note');
             triggerConfetti();
             showToast(`✨ +${xpReward} XP & +${coinReward} Gold!`);
         },
@@ -89,12 +89,8 @@ const completeQuest = (id, xpReward, coinReward) => {
 };
 
 const toggleQuestStatus = (quest) => {
-    const newStatus = quest.status === "todo" ? "in_progress" : "todo";
-    router.patch(
-        `/quests/${quest.id}`,
-        { ...quest, status: newStatus },
-        { preserveScroll: true }
-    );
+    const newStatus = quest.status === 'todo' ? 'in_progress' : 'todo';
+    router.patch(`/quests/${quest.id}`, { ...quest, status: newStatus }, { preserveScroll: true });
 };
 
 // --- HABIT & TIMEBLOCK LOGIC ---
@@ -104,33 +100,33 @@ const toggleHabit = (id) => {
 
 const timeblockForm = useForm({
     date: props.today,
-    start_time: "09:00",
-    end_time: "10:00",
-    title: "",
-    note: "",
+    start_time: '09:00',
+    end_time: '10:00',
+    title: '',
+    note: '',
 });
 
 const addTimeblock = () => {
-    timeblockForm.post("/timeblocks", {
+    timeblockForm.post('/timeblocks', {
         preserveScroll: true,
         onSuccess: () => {
-            timeblockForm.reset("title", "note");
+            timeblockForm.reset('title', 'note');
             timeblockForm.date = props.today;
         },
     });
 };
 
 const deleteTimeblock = (id) => {
-    if (confirm("Delete this timeblock?")) {
+    if (confirm('Delete this timeblock?')) {
         router.delete(`/timeblocks/${id}`, { preserveScroll: true });
     }
 };
 
 // --- VISUAL EFFECTS ---
 const showToast = (message) => {
-    const toast = document.createElement("div");
+    const toast = document.createElement('div');
     toast.className =
-        "fixed top-4 right-4 bg-slate-800 border-l-4 border-emerald-500 text-white px-6 py-4 rounded shadow-2xl z-50 animate-bounce font-bold flex items-center gap-2";
+        'fixed top-4 right-4 bg-slate-800 border-l-4 border-emerald-500 text-white px-6 py-4 rounded shadow-2xl z-50 animate-bounce font-bold flex items-center gap-2';
     toast.innerHTML = `<span>🎉</span> ${message}`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 4000);
@@ -158,7 +154,7 @@ const triggerConfettiSmall = () => {
         particleCount: 50,
         spread: 40,
         origin: { y: 0.6 },
-        colors: ["#818cf8", "#ffffff"],
+        colors: ['#818cf8', '#ffffff'],
     });
 };
 
@@ -189,14 +185,14 @@ const triggerLevelUpConfetti = () => {
             angle: 60,
             spread: 55,
             origin: { x: 0 },
-            colors: ["#fbbf24", "#f59e0b", "#ef4444"],
+            colors: ['#fbbf24', '#f59e0b', '#ef4444'],
         });
         confetti({
             particleCount: 5,
             angle: 120,
             spread: 55,
             origin: { x: 1 },
-            colors: ["#3b82f6", "#8b5cf6", "#ec4899"],
+            colors: ['#3b82f6', '#8b5cf6', '#ec4899'],
         });
         if (Date.now() < end) requestAnimationFrame(frame);
     })();
@@ -206,27 +202,23 @@ const triggerLevelUpConfetti = () => {
 <template>
     <Head title="Command Center" />
 
-    <div class="p-4 md:p-8 max-w-7xl mx-auto space-y-8 text-gray-200">
+    <div class="mx-auto max-w-7xl space-y-8 p-4 text-gray-200 md:p-8">
         <section
             v-if="profile"
-            class="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-2xl relative overflow-hidden"
+            class="relative overflow-hidden rounded-3xl border border-slate-700 bg-slate-800 p-6 shadow-2xl"
         >
             <div
-                class="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-pulse"
+                class="absolute -right-24 -top-24 h-96 w-96 animate-pulse rounded-full bg-indigo-600 opacity-20 mix-blend-screen blur-[100px] filter"
             ></div>
 
-            <div
-                class="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-8 items-center"
-            >
-                <div
-                    class="md:col-span-3 flex flex-col items-center justify-center"
-                >
-                    <div class="relative group">
+            <div class="relative z-10 grid grid-cols-1 items-center gap-8 md:grid-cols-12">
+                <div class="flex flex-col items-center justify-center md:col-span-3">
+                    <div class="group relative">
                         <div
-                            class="absolute inset-0 bg-gradient-to-tr from-cyan-400 to-indigo-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500"
+                            class="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400 to-indigo-500 opacity-75 blur transition duration-500 group-hover:opacity-100"
                         ></div>
                         <div
-                            class="relative w-28 h-28 rounded-full bg-slate-900 border-4 border-slate-700 flex items-center justify-center z-10"
+                            class="relative z-10 flex h-28 w-28 items-center justify-center rounded-full border-4 border-slate-700 bg-slate-900"
                         >
                             <span
                                 class="text-5xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"
@@ -235,22 +227,20 @@ const triggerLevelUpConfetti = () => {
                             </span>
                         </div>
                         <div
-                            class="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-slate-900 px-3 py-1 rounded-full border border-slate-600 text-[10px] font-bold uppercase tracking-widest text-indigo-400 z-20"
+                            class="absolute -bottom-3 left-1/2 z-20 -translate-x-1/2 transform rounded-full border border-slate-600 bg-slate-900 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-indigo-400"
                         >
                             Level
                         </div>
                     </div>
                 </div>
 
-                <div class="md:col-span-9 space-y-6">
+                <div class="space-y-6 md:col-span-9">
                     <XpProgressBar
                         :current="profile.level_data.xp_current"
                         :max="profile.level_data.xp_needed"
                         :percent="profile.level_data.progress_percent"
                     />
-                    <div
-                        class="flex flex-wrap gap-4 justify-center md:justify-start"
-                    >
+                    <div class="flex flex-wrap justify-center gap-4 md:justify-start">
                         <StatCard
                             label="Treasury"
                             :value="profile.coin_balance"
@@ -265,9 +255,7 @@ const triggerLevelUpConfetti = () => {
                         />
                         <StatCard
                             label="Habits"
-                            :value="`${habitSummary?.done_today ?? 0}/${
-                                habitSummary?.total ?? 0
-                            }`"
+                            :value="`${habitSummary?.done_today ?? 0}/${habitSummary?.total ?? 0}`"
                             icon="✅"
                             colorClass="text-emerald-400"
                         />
@@ -276,36 +264,31 @@ const triggerLevelUpConfetti = () => {
             </div>
 
             <div
-                class="mt-8 pt-4 border-t border-slate-700/50 flex flex-wrap gap-3 justify-center md:justify-start"
+                class="mt-8 flex flex-wrap justify-center gap-3 border-t border-slate-700/50 pt-4 md:justify-start"
             >
                 <Link href="/quests" class="btn-secondary">📜 Quest Board</Link>
-                <Link href="/logs/completions" class="btn-secondary"
-                    >📒 Completion Log</Link
-                >
+                <Link href="/logs/completions" class="btn-secondary">📒 Completion Log</Link>
                 <Link href="/treasury" class="btn-secondary">💰 Merchant</Link>
             </div>
         </section>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 space-y-6">
-                <div
-                    class="flex justify-between items-center pb-2 border-b border-slate-700"
-                >
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            <div class="space-y-6 lg:col-span-2">
+                <div class="flex items-center justify-between border-b border-slate-700 pb-2">
                     <div>
                         <h3
-                            class="text-xl font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"
+                            class="flex items-center gap-2 text-xl font-bold uppercase tracking-widest text-slate-300"
                         >
-                            <span>⚔️</span> Active Missions
+                            <span>⚔️</span>
+                            Active Missions
                         </h3>
-                        <span class="text-xs text-slate-500"
-                            >{{ activeQuests.length }} active</span
-                        >
+                        <span class="text-xs text-slate-500">{{ activeQuests.length }} active</span>
                     </div>
 
                     <button
                         v-if="!showCreateQuestForm"
                         @click="showCreateQuestForm = true"
-                        class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg active:scale-95 transition-all flex items-center gap-2"
+                        class="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg transition-all hover:bg-indigo-500 active:scale-95"
                     >
                         <span>+ New Quest</span>
                     </button>
@@ -313,22 +296,20 @@ const triggerLevelUpConfetti = () => {
 
                 <div
                     v-if="showCreateQuestForm"
-                    class="bg-slate-800 p-6 rounded-2xl border border-indigo-500/50 shadow-2xl animate-fade-in relative overflow-hidden"
+                    class="animate-fade-in relative overflow-hidden rounded-2xl border border-indigo-500/50 bg-slate-800 p-6 shadow-2xl"
                 >
-                    <div class="flex justify-between items-start mb-4">
-                        <h4 class="text-lg font-bold text-white">
-                            Summon New Quest
-                        </h4>
+                    <div class="mb-4 flex items-start justify-between">
+                        <h4 class="text-lg font-bold text-white">Summon New Quest</h4>
                         <button
                             @click="showCreateQuestForm = false"
-                            class="text-slate-400 hover:text-white transition-colors"
+                            class="text-slate-400 transition-colors hover:text-white"
                         >
                             ✕
                         </button>
                     </div>
 
                     <form @submit.prevent="submitQuest" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
                             <div class="md:col-span-8">
                                 <label class="label-text">Quest Name</label>
                                 <input
@@ -338,29 +319,21 @@ const triggerLevelUpConfetti = () => {
                                     required
                                     autofocus
                                 />
-                                <div
-                                    v-if="createForm.errors.name"
-                                    class="error-msg"
-                                >
+                                <div v-if="createForm.errors.name" class="error-msg">
                                     {{ createForm.errors.name }}
                                 </div>
                             </div>
                             <div class="md:col-span-4">
                                 <label class="label-text">Initial Status</label>
-                                <select
-                                    v-model="createForm.status"
-                                    class="input-dark w-full"
-                                >
+                                <select v-model="createForm.status" class="input-dark w-full">
                                     <option value="todo">To Do</option>
-                                    <option value="in_progress">
-                                        In Progress
-                                    </option>
+                                    <option value="in_progress">In Progress</option>
                                     <option value="locked">Locked</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
                                 <label class="label-text">Quest Type</label>
                                 <div v-if="!isCustomType">
@@ -368,37 +341,23 @@ const triggerLevelUpConfetti = () => {
                                         :value="createForm.type"
                                         @change="
                                             (e) => {
-                                                createForm.type =
-                                                    e.target.value;
+                                                createForm.type = e.target.value;
                                                 handleTypeChange(e);
                                             }
                                         "
                                         class="input-dark w-full"
                                     >
-                                        <option value="Daily Grind">
-                                            Daily Grind
-                                        </option>
-                                        <option value="Main Quest">
-                                            Main Quest
-                                        </option>
-                                        <option value="Side Quest">
-                                            Side Quest
-                                        </option>
-                                        <option value="Boss Fight">
-                                            Boss Fight
-                                        </option>
-                                        <option value="Learning">
-                                            Learning
-                                        </option>
-                                        <option
-                                            value="Custom"
-                                            class="font-bold text-indigo-400"
-                                        >
+                                        <option value="Daily Grind">Daily Grind</option>
+                                        <option value="Main Quest">Main Quest</option>
+                                        <option value="Side Quest">Side Quest</option>
+                                        <option value="Boss Fight">Boss Fight</option>
+                                        <option value="Learning">Learning</option>
+                                        <option value="Custom" class="font-bold text-indigo-400">
                                             + Custom Type...
                                         </option>
                                     </select>
                                 </div>
-                                <div v-else class="flex gap-2 animate-fade-in">
+                                <div v-else class="animate-fade-in flex gap-2">
                                     <input
                                         v-model="createForm.type"
                                         placeholder="Type custom category..."
@@ -408,7 +367,7 @@ const triggerLevelUpConfetti = () => {
                                     <button
                                         type="button"
                                         @click="cancelCustomType"
-                                        class="bg-slate-700 px-3 rounded-lg text-slate-300 hover:text-white border border-slate-600"
+                                        class="rounded-lg border border-slate-600 bg-slate-700 px-3 text-slate-300 hover:text-white"
                                     >
                                         ✕
                                     </button>
@@ -420,28 +379,24 @@ const triggerLevelUpConfetti = () => {
                                     <input
                                         type="number"
                                         v-model.number="createForm.xp_reward"
-                                        class="input-dark w-full text-indigo-400 font-bold"
+                                        class="input-dark w-full font-bold text-indigo-400"
                                     />
                                 </div>
                                 <div class="flex-1">
-                                    <label class="label-text"
-                                        >Gold Reward</label
-                                    >
+                                    <label class="label-text">Gold Reward</label>
                                     <input
                                         type="number"
                                         v-model.number="createForm.coin_reward"
-                                        class="input-dark w-full text-yellow-400 font-bold"
+                                        class="input-dark w-full font-bold text-yellow-400"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         <div
-                            class="flex items-center gap-6 bg-slate-900/50 p-4 rounded-xl border border-slate-700/50"
+                            class="flex items-center gap-6 rounded-xl border border-slate-700/50 bg-slate-900/50 p-4"
                         >
-                            <label
-                                class="flex items-center gap-3 cursor-pointer select-none"
-                            >
+                            <label class="flex cursor-pointer select-none items-center gap-3">
                                 <div class="relative">
                                     <input
                                         type="checkbox"
@@ -449,30 +404,22 @@ const triggerLevelUpConfetti = () => {
                                         class="peer sr-only"
                                     />
                                     <div
-                                        class="w-10 h-6 bg-slate-700 rounded-full peer-checked:bg-indigo-600 transition-colors"
+                                        class="h-6 w-10 rounded-full bg-slate-700 transition-colors peer-checked:bg-indigo-600"
                                     ></div>
                                     <div
-                                        class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"
+                                        class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4"
                                     ></div>
                                 </div>
-                                <span class="text-sm text-slate-300"
-                                    >Repeatable Quest</span
-                                >
+                                <span class="text-sm text-slate-300">Repeatable Quest</span>
                             </label>
-                            <div
-                                v-if="!createForm.is_repeatable"
-                                class="flex-1 transition-all"
-                            >
+                            <div v-if="!createForm.is_repeatable" class="flex-1 transition-all">
                                 <input
                                     type="date"
                                     v-model="createForm.due_date"
                                     class="input-dark w-full text-sm"
                                 />
                             </div>
-                            <div
-                                v-else
-                                class="flex-1 text-xs text-slate-500 italic text-right"
-                            >
+                            <div v-else class="flex-1 text-right text-xs italic text-slate-500">
                                 Infinite repeats. No due date needed.
                             </div>
                         </div>
@@ -481,7 +428,7 @@ const triggerLevelUpConfetti = () => {
                             <button
                                 type="button"
                                 @click="showCreateQuestForm = false"
-                                class="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                                class="px-4 py-2 text-slate-400 transition-colors hover:text-white"
                             >
                                 Cancel
                             </button>
@@ -490,9 +437,7 @@ const triggerLevelUpConfetti = () => {
                                 :disabled="createForm.processing"
                                 class="btn-primary w-full md:w-auto"
                             >
-                                <span v-if="createForm.processing"
-                                    >Summoning...</span
-                                >
+                                <span v-if="createForm.processing">Summoning...</span>
                                 <span v-else>Confirm</span>
                             </button>
                         </div>
@@ -501,14 +446,12 @@ const triggerLevelUpConfetti = () => {
 
                 <div
                     v-if="activeQuests.length === 0"
-                    class="text-center py-12 bg-slate-800/30 rounded-2xl border-2 border-dashed border-slate-700"
+                    class="rounded-2xl border-2 border-dashed border-slate-700 bg-slate-800/30 py-12 text-center"
                 >
-                    <p class="text-slate-500 italic">
-                        "The quest board is empty. Adventure awaits!"
-                    </p>
+                    <p class="italic text-slate-500">"The quest board is empty. Adventure awaits!"</p>
                     <button
                         @click="showCreateQuestForm = true"
-                        class="text-indigo-400 hover:text-indigo-300 text-sm mt-2 underline"
+                        class="mt-2 text-sm text-indigo-400 underline hover:text-indigo-300"
                     >
                         Create one now
                     </button>
@@ -518,10 +461,10 @@ const triggerLevelUpConfetti = () => {
                     <li
                         v-for="q in activeQuests"
                         :key="q.id"
-                        class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-indigo-500/50 transition-all duration-300 shadow-md group relative overflow-hidden"
+                        class="group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-800 p-5 shadow-md transition-all duration-300 hover:border-indigo-500/50"
                     >
                         <div
-                            class="absolute left-0 top-0 bottom-0 w-1"
+                            class="absolute bottom-0 left-0 top-0 w-1"
                             :class="{
                                 'bg-red-500': q.type === 'Boss Fight',
                                 'bg-yellow-400': q.type === 'Main Quest',
@@ -536,70 +479,56 @@ const triggerLevelUpConfetti = () => {
                             }"
                         ></div>
 
-                        <div
-                            class="flex flex-col md:flex-row justify-between gap-4 relative z-10"
-                        >
+                        <div class="relative z-10 flex flex-col justify-between gap-4 md:flex-row">
                             <div class="flex-1 pl-3">
-                                <div class="flex items-center gap-3 mb-1">
+                                <div class="mb-1 flex items-center gap-3">
                                     <h4
-                                        class="font-bold text-white text-lg group-hover:text-indigo-300 transition-colors"
+                                        class="text-lg font-bold text-white transition-colors group-hover:text-indigo-300"
                                     >
                                         {{ q.name }}
                                     </h4>
                                     <button
                                         @click="toggleQuestStatus(q)"
-                                        class="text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold border transition-colors cursor-pointer hover:opacity-80"
+                                        class="cursor-pointer rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors hover:opacity-80"
                                         :class="
                                             q.status === 'in_progress'
-                                                ? 'bg-indigo-900 text-indigo-300 border-indigo-700 animate-pulse'
-                                                : 'bg-slate-700 text-slate-300 border-slate-600'
+                                                ? 'animate-pulse border-indigo-700 bg-indigo-900 text-indigo-300'
+                                                : 'border-slate-600 bg-slate-700 text-slate-300'
                                         "
                                     >
-                                        {{
-                                            q.status === "in_progress"
-                                                ? "⚡ In Progress"
-                                                : "🛑 To Do"
-                                        }}
+                                        {{ q.status === 'in_progress' ? '⚡ In Progress' : '🛑 To Do' }}
                                     </button>
                                     <span
                                         v-if="q.is_repeatable"
-                                        class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded uppercase tracking-wider"
-                                        >Repeatable</span
+                                        class="rounded bg-slate-700 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-slate-300"
                                     >
+                                        Repeatable
+                                    </span>
                                     <span
                                         v-if="q.type === 'Boss Fight'"
-                                        class="text-[10px] bg-red-900/50 text-red-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold"
-                                        >BOSS</span
+                                        class="rounded bg-red-900/50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-400"
                                     >
+                                        BOSS
+                                    </span>
                                 </div>
 
-                                <div
-                                    class="flex flex-wrap gap-4 text-xs text-slate-400 mt-2"
-                                >
-                                    <span class="flex items-center gap-1"
-                                        >🏷️ {{ q.type }}</span
-                                    >
-                                    <span
-                                        class="flex items-center gap-1 text-indigo-400 font-bold"
-                                        >✨ {{ q.xp_reward }} XP</span
-                                    >
-                                    <span
-                                        class="flex items-center gap-1 text-yellow-500 font-bold"
-                                        >💰 {{ q.coin_reward }} G</span
-                                    >
+                                <div class="mt-2 flex flex-wrap gap-4 text-xs text-slate-400">
+                                    <span class="flex items-center gap-1">🏷️ {{ q.type }}</span>
+                                    <span class="flex items-center gap-1 font-bold text-indigo-400">
+                                        ✨ {{ q.xp_reward }} XP
+                                    </span>
+                                    <span class="flex items-center gap-1 font-bold text-yellow-500">
+                                        💰 {{ q.coin_reward }} G
+                                    </span>
                                     <span
                                         v-if="q.due_date"
                                         class="flex items-center gap-1"
                                         :class="
-                                            q.due_date < today
-                                                ? 'text-red-400 font-bold animate-pulse'
-                                                : ''
+                                            q.due_date < today ? 'animate-pulse font-bold text-red-400' : ''
                                         "
                                     >
                                         📅 {{ q.due_date }}
-                                        <span v-if="q.due_date < today"
-                                            >(OVERDUE)</span
-                                        >
+                                        <span v-if="q.due_date < today">(OVERDUE)</span>
                                     </span>
                                 </div>
                             </div>
@@ -609,26 +538,16 @@ const triggerLevelUpConfetti = () => {
                                     v-model="getCompleteForm(q.id).note"
                                     placeholder="Completion Note"
                                     rows="1"
-                                    class="input-dark text-xs py-2 w-full md:w-48 placeholder-slate-600 focus:w-64 transition-all duration-300 resize-none overflow-hidden"
+                                    class="input-dark w-full resize-none overflow-hidden py-2 text-xs placeholder-slate-600 transition-all duration-300 focus:w-64 md:w-48"
                                     @keydown.enter.exact.prevent="
-                                        completeQuest(
-                                            q.id,
-                                            q.xp_reward,
-                                            q.coin_reward
-                                        )
+                                        completeQuest(q.id, q.xp_reward, q.coin_reward)
                                     "
                                 ></textarea>
 
                                 <button
-                                    @click="
-                                        completeQuest(
-                                            q.id,
-                                            q.xp_reward,
-                                            q.coin_reward
-                                        )
-                                    "
+                                    @click="completeQuest(q.id, q.xp_reward, q.coin_reward)"
                                     :disabled="getCompleteForm(q.id).processing"
-                                    class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg shadow-lg shadow-emerald-900/20 active:scale-95 transition-all w-full md:w-auto flex items-center justify-center gap-2"
+                                    class="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-500 active:scale-95 md:w-auto"
                                 >
                                     <span>✅ Complete</span>
                                 </button>
@@ -639,155 +558,127 @@ const triggerLevelUpConfetti = () => {
             </div>
 
             <div class="space-y-8">
-                <div
-                    class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg"
-                >
-                    <div class="flex justify-between items-center mb-6">
-                        <h3
-                            class="font-bold text-white flex items-center gap-2"
-                        >
-                            <span>🛡️</span> Daily Habits
+                <div class="rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
+                    <div class="mb-6 flex items-center justify-between">
+                        <h3 class="flex items-center gap-2 font-bold text-white">
+                            <span>🛡️</span>
+                            Daily Habits
                         </h3>
                         <span
-                            class="text-xs bg-slate-900 text-slate-400 px-2 py-1 rounded-md border border-slate-700"
-                            >{{ habitSummary?.done_today ?? 0 }}/{{
-                                habitSummary?.total ?? 0
-                            }}</span
+                            class="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-400"
                         >
+                            {{ habitSummary?.done_today ?? 0 }}/{{ habitSummary?.total ?? 0 }}
+                        </span>
                     </div>
                     <ul v-if="habits.length > 0" class="space-y-2">
                         <li v-for="h in habits" :key="h.id" class="group">
                             <label
-                                class="flex items-center gap-3 p-3 rounded-xl bg-slate-900/50 border border-transparent hover:border-slate-600 cursor-pointer transition-all"
+                                class="flex cursor-pointer items-center gap-3 rounded-xl border border-transparent bg-slate-900/50 p-3 transition-all hover:border-slate-600"
                             >
                                 <input
                                     type="checkbox"
                                     :checked="h.done_today"
                                     @change="toggleHabit(h.id)"
-                                    class="w-5 h-5 rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 focus:ring-offset-transparent cursor-pointer"
+                                    class="h-5 w-5 cursor-pointer rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 focus:ring-offset-transparent"
                                 />
                                 <div class="flex-1">
                                     <div
-                                        class="text-sm font-medium text-slate-200 group-hover:text-white transition-colors"
+                                        class="text-sm font-medium text-slate-200 transition-colors group-hover:text-white"
                                         :class="{
-                                            'line-through text-slate-500':
-                                                h.done_today,
+                                            'text-slate-500 line-through': h.done_today,
                                         }"
                                     >
                                         {{ h.name }}
                                     </div>
-                                    <div
-                                        class="text-[10px] text-slate-500 mt-0.5"
-                                    >
+                                    <div class="mt-0.5 text-[10px] text-slate-500">
                                         Current Streak:
-                                        <span class="text-orange-400 font-bold"
-                                            >{{ h.streak }} 🔥</span
-                                        >
+                                        <span class="font-bold text-orange-400">{{ h.streak }} 🔥</span>
                                     </div>
                                 </div>
                             </label>
                         </li>
                     </ul>
-                    <div v-else class="text-center text-slate-500 text-xs py-4">
-                        No active habits.
-                    </div>
+                    <div v-else class="py-4 text-center text-xs text-slate-500">No active habits.</div>
                     <div class="mt-4 text-center">
                         <Link
                             href="/habits"
-                            class="text-xs text-indigo-400 hover:text-indigo-300 font-medium hover:underline"
-                            >Manage Habits & View Calendar</Link
+                            class="text-xs font-medium text-indigo-400 hover:text-indigo-300 hover:underline"
                         >
+                            Manage Habits & View Calendar
+                        </Link>
                     </div>
                 </div>
 
-                <div
-                    class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg"
-                >
-                    <div class="flex justify-between items-center mb-4">
-                        <h3
-                            class="font-bold text-white flex items-center gap-2"
-                        >
-                            <span>⏳</span> Timeblocks
+                <div class="rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
+                    <div class="mb-4 flex items-center justify-between">
+                        <h3 class="flex items-center gap-2 font-bold text-white">
+                            <span>⏳</span>
+                            Timeblocks
                         </h3>
-                        <Link
-                            href="/timeblocks"
-                            class="text-xs text-indigo-400 hover:underline"
-                            >Full Week</Link
-                        >
+                        <Link href="/timeblocks" class="text-xs text-indigo-400 hover:underline">
+                            Full Week
+                        </Link>
                     </div>
 
                     <form
                         @submit.prevent="addTimeblock"
-                        class="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50 mb-6"
+                        class="mb-6 rounded-xl border border-slate-700/50 bg-slate-900/50 p-3"
                     >
-                        <div class="flex gap-2 mb-2">
+                        <div class="mb-2 flex gap-2">
                             <input
                                 type="time"
                                 v-model="timeblockForm.start_time"
-                                class="input-dark text-xs p-1 flex-1 text-center"
+                                class="input-dark flex-1 p-1 text-center text-xs"
                             />
-                            <span class="text-slate-500 self-center">-</span>
+                            <span class="self-center text-slate-500">-</span>
                             <input
                                 type="time"
                                 v-model="timeblockForm.end_time"
-                                class="input-dark text-xs p-1 flex-1 text-center"
+                                class="input-dark flex-1 p-1 text-center text-xs"
                             />
                         </div>
                         <input
                             v-model="timeblockForm.title"
                             placeholder="Focus Block Title..."
-                            class="input-dark text-xs w-full mb-2"
+                            class="input-dark mb-2 w-full text-xs"
                         />
                         <textarea
                             v-model="timeblockForm.note"
                             placeholder="Note (opt)..."
-                            class="input-dark text-xs w-full mb-2 resize-none"
+                            class="input-dark mb-2 w-full resize-none text-xs"
                             rows="1"
                         ></textarea>
                         <button
                             type="submit"
-                            class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-1.5 rounded transition-colors border border-slate-600"
+                            class="w-full rounded border border-slate-600 bg-slate-700 py-1.5 text-xs text-slate-200 transition-colors hover:bg-slate-600"
                         >
                             + Add Block
                         </button>
                     </form>
 
-                    <div
-                        class="space-y-0 relative pl-4 border-l-2 border-slate-700 ml-2"
-                    >
-                        <div
-                            v-if="todayBlocks.length === 0"
-                            class="text-xs text-slate-500 pl-4 italic"
-                        >
+                    <div class="relative ml-2 space-y-0 border-l-2 border-slate-700 pl-4">
+                        <div v-if="todayBlocks.length === 0" class="pl-4 text-xs italic text-slate-500">
                             No schedule set for today.
                         </div>
-                        <div
-                            v-for="b in todayBlocks"
-                            :key="b.id"
-                            class="relative pl-6 pb-6 group last:pb-0"
-                        >
+                        <div v-for="b in todayBlocks" :key="b.id" class="group relative pb-6 pl-6 last:pb-0">
                             <div
-                                class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-800 border-2 border-indigo-500 group-hover:bg-indigo-500 transition-colors"
+                                class="absolute -left-[9px] top-0 h-4 w-4 rounded-full border-2 border-indigo-500 bg-slate-800 transition-colors group-hover:bg-indigo-500"
                             ></div>
-                            <div
-                                class="text-[10px] text-indigo-400 font-mono font-bold mb-0.5"
-                            >
+                            <div class="mb-0.5 font-mono text-[10px] font-bold text-indigo-400">
                                 {{ b.start_time }} - {{ b.end_time }}
                             </div>
-                            <div
-                                class="text-sm text-slate-200 font-medium leading-tight mb-1"
-                            >
+                            <div class="mb-1 text-sm font-medium leading-tight text-slate-200">
                                 {{ b.title }}
                             </div>
                             <div
                                 v-if="b.note"
-                                class="text-xs text-slate-500 bg-slate-900/50 p-2 rounded border border-slate-700/30 italic mb-1"
+                                class="mb-1 rounded border border-slate-700/30 bg-slate-900/50 p-2 text-xs italic text-slate-500"
                             >
                                 "{{ b.note }}"
                             </div>
                             <button
                                 @click="deleteTimeblock(b.id)"
-                                class="text-[10px] text-red-500/70 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                class="text-[10px] text-red-500/70 opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100"
                             >
                                 [Delete Block]
                             </button>
@@ -799,28 +690,26 @@ const triggerLevelUpConfetti = () => {
 
         <div
             v-if="showLevelUpModal"
-            class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in"
+            class="animate-fade-in fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
         >
-            <div class="text-center relative">
+            <div class="relative text-center">
                 <div
-                    class="absolute inset-0 bg-yellow-500 blur-[100px] opacity-20 rounded-full animate-pulse"
+                    class="absolute inset-0 animate-pulse rounded-full bg-yellow-500 opacity-20 blur-[100px]"
                 ></div>
                 <h1
-                    class="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-700 drop-shadow-[0_0_25px_rgba(234,179,8,0.8)] animate-bounce-in relative z-10"
+                    class="animate-bounce-in relative z-10 bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-700 bg-clip-text text-8xl font-black text-transparent drop-shadow-[0_0_25px_rgba(234,179,8,0.8)] md:text-9xl"
                 >
                     LEVEL UP!
                 </h1>
                 <div
-                    class="mt-8 text-white text-4xl font-bold tracking-widest uppercase animate-slide-up relative z-10"
+                    class="animate-slide-up relative z-10 mt-8 text-4xl font-bold uppercase tracking-widest text-white"
                 >
                     You reached Level
-                    <span class="text-yellow-400 text-6xl">{{
-                        profile.level_data.current_level
-                    }}</span>
+                    <span class="text-6xl text-yellow-400">{{ profile.level_data.current_level }}</span>
                 </div>
                 <button
                     @click="showLevelUpModal = false"
-                    class="mt-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 px-12 rounded-full text-xl shadow-[0_0_30px_rgba(99,102,241,0.6)] transform hover:scale-105 transition-all duration-300 relative z-10"
+                    class="relative z-10 mt-12 transform rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-12 py-4 text-xl font-bold text-white shadow-[0_0_30px_rgba(99,102,241,0.6)] transition-all duration-300 hover:scale-105 hover:from-indigo-500 hover:to-purple-500"
                 >
                     AWESOME!
                 </button>
@@ -831,22 +720,22 @@ const triggerLevelUpConfetti = () => {
 
 <style scoped>
 .input-dark {
-    @apply bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder-slate-600;
+    @apply rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-600 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50;
 }
 .label-text {
-    @apply block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5;
+    @apply mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400;
 }
 .btn-primary {
-    @apply bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg shadow-indigo-500/30 transition-all active:scale-95;
+    @apply rounded-lg bg-indigo-600 px-6 py-2 font-bold text-white shadow-lg shadow-indigo-500/30 transition-all hover:bg-indigo-500 active:scale-95;
 }
 .btn-secondary {
-    @apply px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg transition-colors border border-slate-600;
+    @apply rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-600;
 }
 .error-msg {
-    @apply text-red-400 text-xs mt-1;
+    @apply mt-1 text-xs text-red-400;
 }
-input[type="time"]::-webkit-calendar-picker-indicator,
-input[type="date"]::-webkit-calendar-picker-indicator {
+input[type='time']::-webkit-calendar-picker-indicator,
+input[type='date']::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
 }
