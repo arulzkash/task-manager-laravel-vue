@@ -83,7 +83,8 @@ const completeQuest = (id, xpReward, coinReward) => {
         onSuccess: () => {
             form.reset('note');
             triggerConfetti();
-            showToast(`✨ +${xpReward} XP & +${coinReward} Gold!`);
+            triggerSlashEffect();
+            showToast(`⚔️ Slashed! +${xpReward} XP & +${coinReward} Gold!`);
         },
     });
 };
@@ -196,6 +197,60 @@ const triggerLevelUpConfetti = () => {
         });
         if (Date.now() < end) requestAnimationFrame(frame);
     })();
+};
+
+// Efek Tebasan Pedang (Cross Slash)
+const triggerSlashEffect = () => {
+    // 1. Definisikan Bentuk
+    const swordShape = confetti.shapeFromText({ text: '🗡️', scalar: 4 });
+
+    // Settingan Dasar "Tebasan"
+    const slashConfig = {
+        shapes: [swordShape],
+        colors: ['#ffffff', '#e2e8f0'], // Warna kilatan besi
+        ticks: 30, // Hilang SANGAT cepat (efek instan)
+        gravity: 0, // 0 Gravitasi = Terbang Lurus
+        decay: 0.95, // Kecepatan konstan
+        startVelocity: 90, // Kecepatan tinggi
+        scalar: 3, // Ukuran pedang besar
+        flat: true, // 2D Rotation (biar pipih tajam)
+        drift: 0,
+    };
+
+    // Slash 1: Kiri Bawah -> Menembak ke Kanan Atas (Membentuk garis /)
+    confetti({
+        ...slashConfig,
+        particleCount: 10, // Sedikit aja biar jadi garis
+        angle: 45, // Sudut diagonal kanan
+        spread: 5, // SANGAT SEMPIT (biar jadi garis lurus)
+        origin: { x: 0.3, y: 0.7 }, // Start agak pinggir
+    });
+
+    // Slash 2: Kanan Bawah -> Menembak ke Kiri Atas (Membentuk garis \)
+    setTimeout(() => {
+        confetti({
+            ...slashConfig,
+            particleCount: 10,
+            angle: 135, // Sudut diagonal kiri
+            spread: 5,
+            origin: { x: 0.7, y: 0.7 },
+        });
+    }, 100);
+
+    // Efek Benturan di Tengah (Impact)
+    setTimeout(() => {
+        confetti({
+            shapes: ['square', 'circle'], // Percikan impact
+            colors: ['#ef4444', '#f87171', '#ffffff'], // Merah darah & Putih
+            particleCount: 40,
+            spread: 100, // Menyebar ke segala arah
+            origin: { x: 0.5, y: 0.5 }, // Di tengah layar
+            startVelocity: 30,
+            gravity: 0.8, // Yang ini boleh jatuh
+            ticks: 50,
+            scalar: 0.8,
+        });
+    }, 200);
 };
 </script>
 
