@@ -17,6 +17,9 @@ const props = defineProps({
     todayBlocks: Array,
 });
 
+// --- UI STATE ---
+const showCreateQuestForm = ref(false);
+
 // --- QUEST CREATION LOGIC ---
 const isCustomType = ref(false);
 
@@ -51,7 +54,10 @@ const submitQuest = () => {
             createForm.is_repeatable = false;
             isCustomType.value = false;
 
+            showCreateQuestForm.value = false;
+
             showToast("⚔️ Quest Posted to Board!");
+            triggerConfettiSmall();
         },
     });
 };
@@ -86,10 +92,7 @@ const toggleQuestStatus = (quest) => {
     const newStatus = quest.status === "todo" ? "in_progress" : "todo";
     router.patch(
         `/quests/${quest.id}`,
-        {
-            ...quest,
-            status: newStatus,
-        },
+        { ...quest, status: newStatus },
         { preserveScroll: true }
     );
 };
@@ -126,7 +129,6 @@ const deleteTimeblock = (id) => {
 // --- VISUAL EFFECTS ---
 const showToast = (message) => {
     const toast = document.createElement("div");
-    // Styling toast biar makin gaming (border glow)
     toast.className =
         "fixed top-4 right-4 bg-slate-800 border-l-4 border-emerald-500 text-white px-6 py-4 rounded shadow-2xl z-50 animate-bounce font-bold flex items-center gap-2";
     toast.innerHTML = `<span>🎉</span> ${message}`;
@@ -151,62 +153,52 @@ const triggerConfetti = () => {
     fire(0.1, { spread: 120, startVelocity: 45 });
 };
 
+const triggerConfettiSmall = () => {
+    confetti({
+        particleCount: 50,
+        spread: 40,
+        origin: { y: 0.6 },
+        colors: ["#818cf8", "#ffffff"],
+    });
+};
+
 // --- LEVEL UP LOGIC ---
 const showLevelUpModal = ref(false);
-// Simpan level awal saat page load
 const previousLevel = ref(props.profile?.level_data?.current_level || 1);
 
-// Pantau perubahan pada props.profile
 watch(
     () => props.profile,
-    (newProfile, oldProfile) => {
+    (newProfile) => {
         if (!newProfile) return;
-
         const newLevel = newProfile.level_data.current_level;
-
-        // Jika level baru lebih besar dari level yang kita ingat
         if (newLevel > previousLevel.value) {
-            // 1. Munculkan Modal
             showLevelUpModal.value = true;
-
-            // 2. Mainkan Efek Suara (Opsional, kalau mau simpel skip aja baris ini)
-            // new Audio('/sounds/levelup.mp3').play();
-
-            // 3. Ledakkan Confetti Spesial (Durasi lama)
             triggerLevelUpConfetti();
-
-            // 4. Update ingatan level kita
             previousLevel.value = newLevel;
         }
     },
     { deep: true }
 );
 
-// Confetti Spesial Level Up (Fireworks Style)
 const triggerLevelUpConfetti = () => {
     const duration = 3000;
     const end = Date.now() + duration;
-
     (function frame() {
-        // Luncurkan dari kiri dan kanan layar
         confetti({
             particleCount: 5,
             angle: 60,
             spread: 55,
             origin: { x: 0 },
-            colors: ["#fbbf24", "#f59e0b", "#ef4444"], // Nuansa Emas/Merah
+            colors: ["#fbbf24", "#f59e0b", "#ef4444"],
         });
         confetti({
             particleCount: 5,
             angle: 120,
             spread: 55,
             origin: { x: 1 },
-            colors: ["#3b82f6", "#8b5cf6", "#ec4899"], // Nuansa Biru/Ungu
+            colors: ["#3b82f6", "#8b5cf6", "#ec4899"],
         });
-
-        if (Date.now() < end) {
-            requestAnimationFrame(frame);
-        }
+        if (Date.now() < end) requestAnimationFrame(frame);
     })();
 };
 </script>
@@ -295,15 +287,45 @@ const triggerLevelUpConfetti = () => {
         </section>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 space-y-8">
+            <div class="lg:col-span-2 space-y-6">
                 <div
-                    class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg"
+                    class="flex justify-between items-center pb-2 border-b border-slate-700"
                 >
-                    <h3
-                        class="text-xl font-bold text-white mb-6 flex items-center gap-2"
+                    <div>
+                        <h3
+                            class="text-xl font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"
+                        >
+                            <span>⚔️</span> Active Missions
+                        </h3>
+                        <span class="text-xs text-slate-500"
+                            >{{ activeQuests.length }} active</span
+                        >
+                    </div>
+
+                    <button
+                        v-if="!showCreateQuestForm"
+                        @click="showCreateQuestForm = true"
+                        class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg active:scale-95 transition-all flex items-center gap-2"
                     >
-                        <span class="text-2xl">⚔️</span> Post New Quest
-                    </h3>
+                        <span>+ New Quest</span>
+                    </button>
+                </div>
+
+                <div
+                    v-if="showCreateQuestForm"
+                    class="bg-slate-800 p-6 rounded-2xl border border-indigo-500/50 shadow-2xl animate-fade-in relative overflow-hidden"
+                >
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="text-lg font-bold text-white">
+                            Summon New Quest
+                        </h4>
+                        <button
+                            @click="showCreateQuestForm = false"
+                            class="text-slate-400 hover:text-white transition-colors"
+                        >
+                            ✕
+                        </button>
+                    </div>
 
                     <form @submit.prevent="submitQuest" class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -311,9 +333,10 @@ const triggerLevelUpConfetti = () => {
                                 <label class="label-text">Quest Name</label>
                                 <input
                                     v-model="createForm.name"
-                                    placeholder="e.g. Defeat the Bug in Production"
+                                    placeholder="e.g. Defeat the Bug"
                                     class="input-dark w-full"
                                     required
+                                    autofocus
                                 />
                                 <div
                                     v-if="createForm.errors.name"
@@ -322,7 +345,6 @@ const triggerLevelUpConfetti = () => {
                                     {{ createForm.errors.name }}
                                 </div>
                             </div>
-
                             <div class="md:col-span-4">
                                 <label class="label-text">Initial Status</label>
                                 <select
@@ -341,7 +363,6 @@ const triggerLevelUpConfetti = () => {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="label-text">Quest Type</label>
-
                                 <div v-if="!isCustomType">
                                     <select
                                         :value="createForm.type"
@@ -377,7 +398,6 @@ const triggerLevelUpConfetti = () => {
                                         </option>
                                     </select>
                                 </div>
-
                                 <div v-else class="flex gap-2 animate-fade-in">
                                     <input
                                         v-model="createForm.type"
@@ -388,14 +408,12 @@ const triggerLevelUpConfetti = () => {
                                     <button
                                         type="button"
                                         @click="cancelCustomType"
-                                        class="bg-slate-700 px-3 rounded-lg text-slate-300 hover:text-white hover:bg-slate-600 transition-colors border border-slate-600"
-                                        title="Cancel custom type"
+                                        class="bg-slate-700 px-3 rounded-lg text-slate-300 hover:text-white border border-slate-600"
                                     >
                                         ✕
                                     </button>
                                 </div>
                             </div>
-
                             <div class="flex gap-4">
                                 <div class="flex-1">
                                     <label class="label-text">XP Reward</label>
@@ -441,7 +459,6 @@ const triggerLevelUpConfetti = () => {
                                     >Repeatable Quest</span
                                 >
                             </label>
-
                             <div
                                 v-if="!createForm.is_repeatable"
                                 class="flex-1 transition-all"
@@ -460,7 +477,14 @@ const triggerLevelUpConfetti = () => {
                             </div>
                         </div>
 
-                        <div class="flex justify-end">
+                        <div class="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                @click="showCreateQuestForm = false"
+                                class="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
                             <button
                                 type="submit"
                                 :disabled="createForm.processing"
@@ -469,153 +493,149 @@ const triggerLevelUpConfetti = () => {
                                 <span v-if="createForm.processing"
                                     >Summoning...</span
                                 >
-                                <span v-else>Create Quest</span>
+                                <span v-else>Confirm</span>
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <div class="space-y-4">
-                    <div
-                        class="flex justify-between items-end border-b border-slate-700 pb-2"
+                <div
+                    v-if="activeQuests.length === 0"
+                    class="text-center py-12 bg-slate-800/30 rounded-2xl border-2 border-dashed border-slate-700"
+                >
+                    <p class="text-slate-500 italic">
+                        "The quest board is empty. Adventure awaits!"
+                    </p>
+                    <button
+                        @click="showCreateQuestForm = true"
+                        class="text-indigo-400 hover:text-indigo-300 text-sm mt-2 underline"
                     >
-                        <h3
-                            class="text-lg font-bold text-slate-300 uppercase tracking-widest"
-                        >
-                            Active Missions
-                        </h3>
-                        <span class="text-xs text-slate-500"
-                            >{{ activeQuests.length }} active</span
-                        >
-                    </div>
+                        Create one now
+                    </button>
+                </div>
 
-                    <div
-                        v-if="activeQuests.length === 0"
-                        class="text-center py-12 bg-slate-800/30 rounded-2xl border-2 border-dashed border-slate-700"
+                <ul v-else class="space-y-4">
+                    <li
+                        v-for="q in activeQuests"
+                        :key="q.id"
+                        class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-indigo-500/50 transition-all duration-300 shadow-md group relative overflow-hidden"
                     >
-                        <p class="text-slate-500 italic">
-                            "The quest board is empty. Adventure awaits!"
-                        </p>
-                    </div>
+                        <div
+                            class="absolute left-0 top-0 bottom-0 w-1"
+                            :class="{
+                                'bg-red-500': q.type === 'Boss Fight',
+                                'bg-yellow-400': q.type === 'Main Quest',
+                                'bg-blue-400': q.type === 'Side Quest',
+                                'bg-emerald-400': q.type === 'Daily Grind',
+                                'bg-slate-500': ![
+                                    'Boss Fight',
+                                    'Main Quest',
+                                    'Side Quest',
+                                    'Daily Grind',
+                                ].includes(q.type),
+                            }"
+                        ></div>
 
-                    <ul v-else class="space-y-4">
-                        <li
-                            v-for="q in activeQuests"
-                            :key="q.id"
-                            class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-indigo-500/50 transition-all duration-300 shadow-md group relative overflow-hidden"
+                        <div
+                            class="flex flex-col md:flex-row justify-between gap-4 relative z-10"
                         >
-                            <div
-                                class="absolute left-0 top-0 bottom-0 w-1"
-                                :class="{
-                                    'bg-red-500': q.type === 'Boss Fight',
-                                    'bg-yellow-400': q.type === 'Main Quest',
-                                    'bg-blue-400': q.type === 'Side Quest',
-                                    'bg-emerald-400': q.type === 'Daily Grind',
-                                    'bg-slate-500': ![
-                                        'Boss Fight',
-                                        'Main Quest',
-                                        'Side Quest',
-                                        'Daily Grind',
-                                    ].includes(q.type),
-                                }"
-                            ></div>
-
-                            <div
-                                class="flex flex-col md:flex-row justify-between gap-4 relative z-10"
-                            >
-                                <div class="flex-1 pl-3">
-                                    <div class="flex items-center gap-3 mb-1">
-                                        <h4
-                                            class="font-bold text-white text-lg group-hover:text-indigo-300 transition-colors"
-                                        >
-                                            {{ q.name }}
-                                        </h4>
-                                        <button
-                                            @click="toggleQuestStatus(q)"
-                                            class="text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold border transition-colors cursor-pointer hover:opacity-80"
-                                            :class="{
-                                                'bg-slate-700 text-slate-300 border-slate-600':
-                                                    q.status === 'todo',
-                                                'bg-indigo-900 text-indigo-300 border-indigo-700 animate-pulse':
-                                                    q.status === 'in_progress',
-                                            }"
-                                        >
-                                            {{
-                                                q.status === "in_progress"
-                                                    ? "⚡ In Progress"
-                                                    : "🛑 To Do"
-                                            }}
-                                        </button>
-
-                                        <span
-                                            v-if="q.is_repeatable"
-                                            class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded uppercase tracking-wider"
-                                            >Repeatable</span
-                                        >
-                                        <span
-                                            v-if="q.type === 'Boss Fight'"
-                                            class="text-[10px] bg-red-900/50 text-red-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold"
-                                            >BOSS</span
-                                        >
-                                    </div>
-
-                                    <div
-                                        class="flex flex-wrap gap-4 text-xs text-slate-400 mt-2"
+                            <div class="flex-1 pl-3">
+                                <div class="flex items-center gap-3 mb-1">
+                                    <h4
+                                        class="font-bold text-white text-lg group-hover:text-indigo-300 transition-colors"
                                     >
-                                        <span class="flex items-center gap-1"
-                                            >🏷️ {{ q.type }}</span
-                                        >
-                                        <span
-                                            class="flex items-center gap-1 text-indigo-400 font-bold"
-                                            >✨ {{ q.xp_reward }} XP</span
-                                        >
-                                        <span
-                                            class="flex items-center gap-1 text-yellow-500 font-bold"
-                                            >💰 {{ q.coin_reward }} G</span
-                                        >
-                                        <span
-                                            v-if="q.due_date"
-                                            class="flex items-center gap-1"
-                                            :class="
-                                                q.due_date < today
-                                                    ? 'text-red-400 font-bold animate-pulse'
-                                                    : ''
-                                            "
-                                        >
-                                            📅 {{ q.due_date }}
-                                            <span v-if="q.due_date < today"
-                                                >(OVERDUE)</span
-                                            >
-                                        </span>
-                                    </div>
+                                        {{ q.name }}
+                                    </h4>
+                                    <button
+                                        @click="toggleQuestStatus(q)"
+                                        class="text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold border transition-colors cursor-pointer hover:opacity-80"
+                                        :class="
+                                            q.status === 'in_progress'
+                                                ? 'bg-indigo-900 text-indigo-300 border-indigo-700 animate-pulse'
+                                                : 'bg-slate-700 text-slate-300 border-slate-600'
+                                        "
+                                    >
+                                        {{
+                                            q.status === "in_progress"
+                                                ? "⚡ In Progress"
+                                                : "🛑 To Do"
+                                        }}
+                                    </button>
+                                    <span
+                                        v-if="q.is_repeatable"
+                                        class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded uppercase tracking-wider"
+                                        >Repeatable</span
+                                    >
+                                    <span
+                                        v-if="q.type === 'Boss Fight'"
+                                        class="text-[10px] bg-red-900/50 text-red-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold"
+                                        >BOSS</span
+                                    >
                                 </div>
 
-                                <div class="flex flex-col items-end gap-2">
-                                    <input
-                                        v-model="getCompleteForm(q.id).note"
-                                        placeholder="Completion Log / Note..."
-                                        class="input-dark text-xs py-1.5 w-full md:w-48 placeholder-slate-600 focus:w-64 transition-all duration-300"
-                                    />
-                                    <button
-                                        @click="
-                                            completeQuest(
-                                                q.id,
-                                                q.xp_reward,
-                                                q.coin_reward
-                                            )
-                                        "
-                                        :disabled="
-                                            getCompleteForm(q.id).processing
-                                        "
-                                        class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg shadow-lg shadow-emerald-900/20 active:scale-95 transition-all w-full md:w-auto flex items-center justify-center gap-2"
+                                <div
+                                    class="flex flex-wrap gap-4 text-xs text-slate-400 mt-2"
+                                >
+                                    <span class="flex items-center gap-1"
+                                        >🏷️ {{ q.type }}</span
                                     >
-                                        <span>✅ Complete Mission</span>
-                                    </button>
+                                    <span
+                                        class="flex items-center gap-1 text-indigo-400 font-bold"
+                                        >✨ {{ q.xp_reward }} XP</span
+                                    >
+                                    <span
+                                        class="flex items-center gap-1 text-yellow-500 font-bold"
+                                        >💰 {{ q.coin_reward }} G</span
+                                    >
+                                    <span
+                                        v-if="q.due_date"
+                                        class="flex items-center gap-1"
+                                        :class="
+                                            q.due_date < today
+                                                ? 'text-red-400 font-bold animate-pulse'
+                                                : ''
+                                        "
+                                    >
+                                        📅 {{ q.due_date }}
+                                        <span v-if="q.due_date < today"
+                                            >(OVERDUE)</span
+                                        >
+                                    </span>
                                 </div>
                             </div>
-                        </li>
-                    </ul>
-                </div>
+
+                            <div class="flex flex-col items-end gap-2">
+                                <textarea
+                                    v-model="getCompleteForm(q.id).note"
+                                    placeholder="Completion Note"
+                                    rows="1"
+                                    class="input-dark text-xs py-2 w-full md:w-48 placeholder-slate-600 focus:w-64 transition-all duration-300 resize-none overflow-hidden"
+                                    @keydown.enter.exact.prevent="
+                                        completeQuest(
+                                            q.id,
+                                            q.xp_reward,
+                                            q.coin_reward
+                                        )
+                                    "
+                                ></textarea>
+
+                                <button
+                                    @click="
+                                        completeQuest(
+                                            q.id,
+                                            q.xp_reward,
+                                            q.coin_reward
+                                        )
+                                    "
+                                    :disabled="getCompleteForm(q.id).processing"
+                                    class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg shadow-lg shadow-emerald-900/20 active:scale-95 transition-all w-full md:w-auto flex items-center justify-center gap-2"
+                                >
+                                    <span>✅ Complete</span>
+                                </button>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
             </div>
 
             <div class="space-y-8">
@@ -630,11 +650,10 @@ const triggerLevelUpConfetti = () => {
                         </h3>
                         <span
                             class="text-xs bg-slate-900 text-slate-400 px-2 py-1 rounded-md border border-slate-700"
-                        >
-                            {{ habitSummary?.done_today ?? 0 }}/{{
+                            >{{ habitSummary?.done_today ?? 0 }}/{{
                                 habitSummary?.total ?? 0
-                            }}
-                        </span>
+                            }}</span
+                        >
                     </div>
                     <ul v-if="habits.length > 0" class="space-y-2">
                         <li v-for="h in habits" :key="h.id" class="group">
@@ -696,6 +715,7 @@ const triggerLevelUpConfetti = () => {
                             >Full Week</Link
                         >
                     </div>
+
                     <form
                         @submit.prevent="addTimeblock"
                         class="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50 mb-6"
@@ -731,6 +751,7 @@ const triggerLevelUpConfetti = () => {
                             + Add Block
                         </button>
                     </form>
+
                     <div
                         class="space-y-0 relative pl-4 border-l-2 border-slate-700 ml-2"
                     >
@@ -784,13 +805,11 @@ const triggerLevelUpConfetti = () => {
                 <div
                     class="absolute inset-0 bg-yellow-500 blur-[100px] opacity-20 rounded-full animate-pulse"
                 ></div>
-
                 <h1
                     class="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-700 drop-shadow-[0_0_25px_rgba(234,179,8,0.8)] animate-bounce-in relative z-10"
                 >
                     LEVEL UP!
                 </h1>
-
                 <div
                     class="mt-8 text-white text-4xl font-bold tracking-widest uppercase animate-slide-up relative z-10"
                 >
@@ -799,7 +818,6 @@ const triggerLevelUpConfetti = () => {
                         profile.level_data.current_level
                     }}</span>
                 </div>
-
                 <button
                     @click="showLevelUpModal = false"
                     class="mt-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 px-12 rounded-full text-xl shadow-[0_0_30px_rgba(99,102,241,0.6)] transform hover:scale-105 transition-all duration-300 relative z-10"
@@ -827,22 +845,25 @@ const triggerLevelUpConfetti = () => {
 .error-msg {
     @apply text-red-400 text-xs mt-1;
 }
-
 input[type="time"]::-webkit-calendar-picker-indicator,
 input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
 }
-::-webkit-scrollbar {
-    width: 8px;
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
 }
-::-webkit-scrollbar-track {
-    @apply bg-slate-900;
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
-::-webkit-scrollbar-thumb {
-    @apply bg-slate-700 rounded-full hover:bg-slate-600;
-}
-
+/* Level Up Anim */
 @keyframes bounce-in {
     0% {
         transform: scale(0.3);
@@ -859,7 +880,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         opacity: 1;
     }
 }
-
 @keyframes slide-up {
     0% {
         transform: translateY(50px);
@@ -870,25 +890,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         opacity: 1;
     }
 }
-
 .animate-bounce-in {
     animation: bounce-in 0.8s cubic-bezier(0.215, 0.61, 0.355, 1) both;
 }
-
 .animate-slide-up {
-    animation: slide-up 0.8s ease-out 0.5s both; /* Delay 0.5s biar muncul setelah teks LEVEL UP */
-}
-
-.animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+    animation: slide-up 0.8s ease-out 0.5s both;
 }
 </style>
