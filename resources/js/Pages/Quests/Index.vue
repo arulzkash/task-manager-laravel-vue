@@ -4,8 +4,11 @@ import { router, Link, Head, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import debounce from 'lodash/debounce';
 import confetti from 'canvas-confetti';
+import { useAudio } from '@/Composables/useAudio';
 
 defineOptions({ layout: AppLayout });
+
+const { playSfx } = useAudio();
 
 const props = defineProps({
     quests: Object,
@@ -53,9 +56,12 @@ watch(
 
         // Jika level naik
         if (newLevel > previousLevel.value) {
-            showLevelUpModal.value = true;
-            triggerLevelUpConfetti();
-            previousLevel.value = newLevel;
+            setTimeout(() => {
+                showLevelUpModal.value = true;
+                triggerLevelUpConfetti();
+                playSfx('levelup');
+                previousLevel.value = newLevel;
+            }, 2500); // Auto close setelah 5 detik
         }
     },
     { deep: true }
@@ -145,6 +151,8 @@ const submitComplete = () => {
             triggerConfetti(); // Confetti biasa
             triggerSlashEffect();
             showToast(`✨ +${rewardXP} XP & +${rewardCoin} Gold!`);
+            playSfx('complete');
+            playSfx('slash');
         },
     });
 };

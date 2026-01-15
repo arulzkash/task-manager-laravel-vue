@@ -3,8 +3,11 @@ import { ref } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link, useForm, router, Head } from "@inertiajs/vue3";
 import confetti from "canvas-confetti";
+import { useAudio } from '@/Composables/useAudio';
 
 defineOptions({ layout: AppLayout });
+
+const { playSfx } = useAudio();
 
 const props = defineProps({
     habits: Array,
@@ -33,7 +36,7 @@ const toggleHabit = (h) => {
         preserveScroll: true,
         onSuccess: () => {
             if (!h.done_today) { // Kalau tadinya belum done, sekarang jadi done
-                triggerMiniConfetti();
+                playSfx('toggle-habit');
             }
         }
     });
@@ -54,14 +57,6 @@ const setView = (view) => {
 };
 
 // --- VISUALS ---
-const triggerMiniConfetti = () => {
-    confetti({
-        particleCount: 50,
-        spread: 40,
-        origin: { y: 0.7 },
-        colors: ['#34d399', '#ffffff']
-    });
-};
 
 const showToast = (message) => {
     const toast = document.createElement('div');

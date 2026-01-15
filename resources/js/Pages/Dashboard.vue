@@ -5,8 +5,11 @@ import { watch, ref } from 'vue';
 import XpProgressBar from '@/Components/Game/XpProgressBar.vue';
 import StatCard from '@/Components/Game/StatCard.vue';
 import confetti from 'canvas-confetti';
+import { useAudio } from '@/Composables/useAudio';
 
 defineOptions({ layout: AppLayout });
+
+const { playSfx, playBgm, stopSfx } = useAudio();
 
 const props = defineProps({
     profile: Object,
@@ -57,7 +60,6 @@ const submitQuest = () => {
             showCreateQuestForm.value = false;
 
             showToast('⚔️ Quest Posted to Board!');
-            triggerConfettiSmall();
         },
     });
 };
@@ -85,6 +87,8 @@ const completeQuest = (id, xpReward, coinReward) => {
             triggerConfetti();
             triggerSlashEffect();
             showToast(`⚔️ Slashed! +${xpReward} XP & +${coinReward} Gold!`);
+            playSfx('complete');
+            playSfx('slash');
         },
     });
 };
@@ -96,7 +100,21 @@ const toggleQuestStatus = (quest) => {
 
 // --- HABIT & TIMEBLOCK LOGIC ---
 const toggleHabit = (id) => {
-    router.patch(`/habits/${id}/toggle`, {}, { preserveScroll: true });
+    const habit = props.habits.find((h) => h.id === id);
+    if (!habit) return;
+
+    const wasDone = habit.done_today;
+
+    router.patch(
+        `/habits/${id}/toggle`,
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                if (!wasDone) playSfx('toggle-habit');
+            },
+        }
+    );
 };
 
 const timeblockForm = useForm({
@@ -150,14 +168,7 @@ const triggerConfetti = () => {
     fire(0.1, { spread: 120, startVelocity: 45 });
 };
 
-const triggerConfettiSmall = () => {
-    confetti({
-        particleCount: 50,
-        spread: 40,
-        origin: { y: 0.6 },
-        colors: ['#818cf8', '#ffffff'],
-    });
-};
+
 
 // --- LEVEL UP LOGIC ---
 const showLevelUpModal = ref(false);
@@ -169,9 +180,12 @@ watch(
         if (!newProfile) return;
         const newLevel = newProfile.level_data.current_level;
         if (newLevel > previousLevel.value) {
-            showLevelUpModal.value = true;
-            triggerLevelUpConfetti();
-            previousLevel.value = newLevel;
+            setTimeout(() => {
+                showLevelUpModal.value = true;
+                triggerLevelUpConfetti();
+                playSfx('levelup');
+                previousLevel.value = newLevel;
+            }, 2500);
         }
     },
     { deep: true }

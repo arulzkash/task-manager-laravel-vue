@@ -3,8 +3,11 @@ import { Link, useForm, router, Head } from "@inertiajs/vue3";
 import { ref, computed } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import confetti from "canvas-confetti";
+import { useAudio } from "@/Composables/useAudio";
 
 defineOptions({ layout: AppLayout });
+
+const { playSfx } = useAudio();
 
 const props = defineProps({
     profile: Object,
@@ -109,6 +112,8 @@ const showToast = (message) => {
 // Simulasi efek suara/visual
 const triggerCoinSound = () => {
     // Bisa tambah audio di sini nanti
+    playSfx('coin')
+    playSfx('purchase')
     confetti({
         particleCount: 50,
         spread: 40,
