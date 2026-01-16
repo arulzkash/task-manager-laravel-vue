@@ -48,15 +48,36 @@ const showingNavigationDropdown = ref(false);
                             </button>
                         </div>
 
-                        <Link href="/dashboard" class="group flex flex-shrink-0 items-center gap-2">
+                        <Link href="/dashboard" class="group flex flex-shrink-0 items-center gap-3">
                             <div
-                                class="flex h-8 w-8 items-center justify-center rounded bg-gradient-to-br from-indigo-500 to-purple-600 font-bold text-white shadow-lg transition-all group-hover:shadow-indigo-500/50"
+                                class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(34,211,238,0.6)]"
                             >
-                                R
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                    class="h-5 w-5 -rotate-12 text-white drop-shadow-sm"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.007Zm-7.037 5.25a.75.75 0 0 1 0 1.5H2.25a.75.75 0 0 1 0-1.5h1.5Zm0 4.5a.75.75 0 0 1 0 1.5H2.25a.75.75 0 0 1 0-1.5h1.5ZM6 17.25a.75.75 0 0 1 0 1.5H2.25a.75.75 0 0 1 0-1.5H6Z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
                             </div>
-                            <span class="hidden text-lg font-bold tracking-tight text-white sm:block">
-                                RPG Life
-                            </span>
+
+                            <div class="hidden flex-col sm:flex">
+                                <span
+                                    class="text-lg font-black tracking-tight text-white transition-colors group-hover:text-cyan-300"
+                                >
+                                    Level Life
+                                </span>
+                                <span
+                                    class="-mt-1 text-[10px] font-medium uppercase tracking-widest text-indigo-300/80"
+                                >
+                                    Productivity RPG
+                                </span>
+                            </div>
                         </Link>
 
                         <div class="ml-4 hidden items-center gap-1 md:flex">
