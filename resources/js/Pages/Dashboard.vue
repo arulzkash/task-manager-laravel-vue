@@ -33,13 +33,23 @@ const createForm = useForm({
     xp_reward: 50,
     coin_reward: 50,
     due_date: null,
-    is_repeatable: false,
+    is_repeatable: true,
 });
 
 const handleTypeChange = (event) => {
-    if (event.target.value === 'Custom') {
+    const selectedType = event.target.value;
+
+    if (selectedType === 'Custom') {
         isCustomType.value = true;
         createForm.type = '';
+        createForm.is_repeatable = false; // Reset default buat custom
+    } else {
+        // Logic Auto-Set Repeatable
+        if (selectedType === 'Daily Grind') {
+            createForm.is_repeatable = true; // Auto True
+        } else {
+            createForm.is_repeatable = false; // Auto False (tapi bisa diedit user nanti)
+        }
     }
 };
 
@@ -167,8 +177,6 @@ const triggerConfetti = () => {
     fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
     fire(0.1, { spread: 120, startVelocity: 45 });
 };
-
-
 
 // --- LEVEL UP LOGIC ---
 const showLevelUpModal = ref(false);
@@ -465,11 +473,18 @@ const triggerSlashEffect = () => {
                         <div
                             class="flex items-center gap-6 rounded-xl border border-slate-700/50 bg-slate-900/50 p-4"
                         >
-                            <label class="flex cursor-pointer select-none items-center gap-3">
+                            <label
+                                class="flex select-none items-center gap-3 transition-opacity"
+                                :class="{
+                                    'cursor-not-allowed opacity-60': createForm.type === 'Daily Grind',
+                                    'cursor-pointer': createForm.type !== 'Daily Grind',
+                                }"
+                            >
                                 <div class="relative">
                                     <input
                                         type="checkbox"
                                         v-model="createForm.is_repeatable"
+                                        :disabled="createForm.type === 'Daily Grind'"
                                         class="peer sr-only"
                                     />
                                     <div
@@ -479,7 +494,16 @@ const triggerSlashEffect = () => {
                                         class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4"
                                     ></div>
                                 </div>
-                                <span class="text-sm text-slate-300">Repeatable Quest</span>
+
+                                <div class="flex flex-col">
+                                    <span class="text-sm text-slate-300">Repeatable Quest</span>
+                                    <span
+                                        v-if="createForm.type === 'Daily Grind'"
+                                        class="text-[10px] italic text-indigo-400"
+                                    >
+                                        (Locked for Daily Grind)
+                                    </span>
+                                </div>
                             </label>
                             <div v-if="!createForm.is_repeatable" class="flex-1 transition-all">
                                 <input
@@ -608,9 +632,6 @@ const triggerSlashEffect = () => {
                                     placeholder="Completion Note"
                                     rows="1"
                                     class="input-dark w-full resize-none overflow-hidden py-2 text-xs placeholder-slate-600 transition-all duration-300 focus:w-64 md:w-48"
-                                    @keydown.enter.exact.prevent="
-                                        completeQuest(q.id, q.xp_reward, q.coin_reward)
-                                    "
                                 ></textarea>
 
                                 <button

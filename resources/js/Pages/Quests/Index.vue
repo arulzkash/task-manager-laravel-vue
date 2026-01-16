@@ -103,11 +103,21 @@ const startEdit = (q) => {
 };
 
 const handleEditTypeChange = (e) => {
-    if (e.target.value === 'Custom') {
+    const selectedType = e.target.value;
+
+    if (selectedType === 'Custom') {
         isEditCustomType.value = true;
         editForm.type = '';
+        editForm.is_repeatable = false; // Reset
     } else {
-        editForm.type = e.target.value;
+        editForm.type = selectedType;
+
+        // Logic Auto-Lock untuk Edit
+        if (selectedType === 'Daily Grind') {
+            editForm.is_repeatable = true;
+        } else {
+            editForm.is_repeatable = false;
+        }
     }
 };
 
@@ -476,6 +486,7 @@ const formatStatus = (s) => s.replace('_', ' ').toUpperCase();
                             ✏️
                         </button>
                         <button
+                            v-if="quest.status !== 'done' && quest.status !== 'locked'"
                             @click="deleteQuest(quest)"
                             class="text-slate-400 transition-colors hover:text-red-400"
                             title="Delete"
@@ -568,6 +579,7 @@ const formatStatus = (s) => s.replace('_', ' ').toUpperCase();
                                     @click="
                                         isEditCustomType = false;
                                         editForm.type = 'Daily Grind';
+                                        editForm.is_repeatable = true;
                                     "
                                     class="rounded bg-slate-700 px-3 text-slate-300 hover:text-white"
                                 >
@@ -589,13 +601,28 @@ const formatStatus = (s) => s.replace('_', ' ').toUpperCase();
                     <div
                         class="flex items-center gap-4 rounded border border-slate-700/50 bg-slate-900/50 p-3"
                     >
-                        <label class="flex cursor-pointer items-center gap-2">
+                        <label
+                            class="flex items-center gap-2"
+                            :class="{
+                                'cursor-not-allowed opacity-60': editForm.type === 'Daily Grind',
+                                'cursor-pointer': editForm.type !== 'Daily Grind',
+                            }"
+                        >
                             <input
                                 type="checkbox"
                                 v-model="editForm.is_repeatable"
+                                :disabled="editForm.type === 'Daily Grind'"
                                 class="h-4 w-4 accent-indigo-500"
                             />
-                            <span class="text-sm text-slate-300">Repeatable</span>
+                            <div class="flex flex-col">
+                                <span class="text-sm text-slate-300">Repeatable</span>
+                                <span
+                                    v-if="editForm.type === 'Daily Grind'"
+                                    class="text-[10px] italic leading-none text-indigo-400"
+                                >
+                                    (Locked)
+                                </span>
+                            </div>
                         </label>
                         <div v-if="!editForm.is_repeatable" class="flex-1">
                             <input

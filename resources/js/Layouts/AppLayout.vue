@@ -184,30 +184,35 @@ const showingNavigationDropdown = ref(false);
                                 : 'text-slate-400 hover:bg-slate-700 hover:text-white'
                         "
                         class="block py-2 pl-3 pr-4 text-base font-medium transition-colors"
+                        @click="showingNavigationDropdown = false"
                     >
                         Dashboard
                     </Link>
                     <Link
                         href="/quests"
                         class="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+                        @click="showingNavigationDropdown = false"
                     >
                         Quests
                     </Link>
                     <Link
                         href="/treasury"
                         class="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+                        @click="showingNavigationDropdown = false"
                     >
                         Treasury
                     </Link>
                     <Link
                         href="/habits"
                         class="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+                        @click="showingNavigationDropdown = false"
                     >
                         Habits
                     </Link>
                     <Link
                         href="/timeblocks"
                         class="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+                        @click="showingNavigationDropdown = false"
                     >
                         Timeline
                     </Link>
@@ -217,12 +222,14 @@ const showingNavigationDropdown = ref(false);
                     <Link
                         href="/logs/completions"
                         class="block py-2 pl-6 pr-4 text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-white"
+                        @click="showingNavigationDropdown = false"
                     >
                         📜 Quest Logs
                     </Link>
                     <Link
                         href="/logs/treasury"
                         class="block py-2 pl-6 pr-4 text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-white"
+                        @click="showingNavigationDropdown = false"
                     >
                         💰 Purchase Logs
                     </Link>
@@ -242,10 +249,18 @@ const showingNavigationDropdown = ref(false);
                     </div>
                     <div class="mt-3 space-y-1">
                         <Link
+                            :href="route('profile.edit')"
+                            class="block w-full border-l-4 border-transparent py-2 pl-3 pr-4 text-left text-base font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+                            @click="showingNavigationDropdown = false"
+                        >
+                            ⚙️ Character Sheet
+                        </Link>
+                        <Link
                             href="/logout"
                             method="post"
                             as="button"
                             class="block w-full border-l-4 border-transparent py-2 pl-3 pr-4 text-left text-base font-medium text-red-400 transition-colors hover:bg-slate-700 hover:text-red-300"
+                            @click="showingNavigationDropdown = false"
                         >
                             Log Out
                         </Link>
