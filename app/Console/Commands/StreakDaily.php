@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Profile;
+use App\Services\BadgeService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -110,6 +111,7 @@ class StreakDaily extends Command
 
                 if ($dirty) {
                     $profile->save();
+                    app(BadgeService::class)->syncForUser($profile->user);
                     $updated++;
                 }
             }

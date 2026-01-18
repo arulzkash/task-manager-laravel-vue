@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BadgeDebugController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -106,4 +107,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/leaderboard', [LeaderboardController::class, 'index']);
     Route::get('/api/leaderboard', [LeaderboardController::class, 'index']);
+
+    Route::get('/debug/badges', [BadgeDebugController::class, 'index']);
 });

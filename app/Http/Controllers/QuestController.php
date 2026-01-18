@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Quest;
+use App\Services\BadgeService;
 use Illuminate\Http\Request;
 
 class QuestController extends Controller
@@ -105,6 +106,9 @@ class QuestController extends Controller
         $profile->coin_balance += $quest->coin_reward;
 
         $profile->save();
+
+        app(BadgeService::class)->syncForUser($request->user());
+
 
         return redirect()->back();
     }
