@@ -69,26 +69,41 @@ class QuestController extends Controller
             'note' => $data['note'] ?? null,
         ]);
 
-        // Update profile + streak
+        // Update profile + streak (NEW SYSTEM)
         $profile = $request->user()->profile;
 
         $today = now()->toDateString();
         $yesterday = now()->subDay()->toDateString();
 
-        $last = $profile->last_quest_completed_at;
+        $lastActive = $profile->last_active_date;
 
-        if ($last === $today) {
-            // hari ini sudah ada completion -> streak tetap
-        } elseif ($last === $yesterday) {
-            $profile->current_streak += 1;
+        // REALTIME STREAK (leaderboard)
+        if ($lastActive === $today) {
+            // sudah aktif hari ini -> streak_current tetap
+        } elseif ($lastActive === $yesterday) {
+            $profile->streak_current = (int) ($profile->streak_current ?? 0) + 1;
         } else {
-            // bolong sehari atau belum pernah -> streak jadi 0 (sesuai request lo)
-            $profile->current_streak = $last === null ? 1 : 0;
+            // aktif lagi setelah jeda (atau baru pertama) -> mulai dari 1
+            $profile->streak_current = 1;
         }
 
+        // set last active hari ini
+        $profile->last_active_date = $today;
+
+        // update best streak
+        $profile->streak_best = max(
+            (int) ($profile->streak_best ?? 0),
+            (int) ($profile->streak_current ?? 0)
+        );
+
+        // LEGACY SYNC (biar UI lama konsisten)
+        $profile->current_streak = (int) ($profile->streak_current ?? 0);
+        $profile->last_quest_completed_at = $today;
+
+        // XP + coin
         $profile->xp_total += $quest->xp_reward;
         $profile->coin_balance += $quest->coin_reward;
-        $profile->last_quest_completed_at = $today;
+
         $profile->save();
 
         return redirect()->back();
