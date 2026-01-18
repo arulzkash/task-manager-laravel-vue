@@ -105,7 +105,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{timeBlock}', [TimeBlockController::class, 'destroy']);
     });
 
-    Route::get('/leaderboard', [LeaderboardController::class, 'index']);
+    Route::get('/leaderboard', [LeaderboardController::class, 'page']);
     Route::get('/api/leaderboard', [LeaderboardController::class, 'index']);
 
     Route::get('/debug/badges', [BadgeDebugController::class, 'index']);
