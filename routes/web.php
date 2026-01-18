@@ -14,6 +14,7 @@ use App\Http\Controllers\CompletionLogController;
 use App\Http\Controllers\CompletionLogPageController;
 use App\Http\Controllers\HabitController;
 use App\Http\Controllers\HabitPageController;
+use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\TimeBlockController;
 use App\Http\Controllers\TimeBlockPageController;
 use App\Http\Controllers\TreasuryController;
@@ -102,4 +103,6 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{timeBlock}', [TimeBlockController::class, 'update']);
         Route::delete('/{timeBlock}', [TimeBlockController::class, 'destroy']);
     });
+
+    Route::get('/leaderboard', [LeaderboardController::class, 'index']);
 });
