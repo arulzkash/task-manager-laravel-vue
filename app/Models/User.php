@@ -61,6 +61,14 @@ class User extends Authenticatable
                 'coin_balance' => 0,
                 'current_streak' => 0,
                 'last_quest_completed_at' => null,
+                'streak_current' => 0,
+                'streak_best' => 0,
+                'streak_maintained_through' => null,
+                'last_active_date' => null,
+                'freezes_used_week_start' => null,
+                'freezes_used_count' => 0,
+                'freezes_used_total' => 0,
+                'streak_resets_total' => 0,
             ]);
         });
     }

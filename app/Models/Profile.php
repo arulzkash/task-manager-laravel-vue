@@ -13,6 +13,14 @@ class Profile extends Model
         'coin_balance',
         'current_streak',
         'last_quest_completed_at',
+        'streak_current',
+        'streak_best',
+        'streak_maintained_through',
+        'last_active_date',
+        'freezes_used_week_start',
+        'freezes_used_count',
+        'freezes_used_total',
+        'streak_resets_total',
     ];
 
     // INI BARU: Memberitahu Laravel untuk selalu menyertakan atribut 'level_data' saat model diubah jadi JSON/Array
