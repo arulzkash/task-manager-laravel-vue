@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Quest;
 use App\Services\BadgeService;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class QuestController extends Controller
 {
@@ -43,25 +44,20 @@ class QuestController extends Controller
         $this->authorize('update', $quest);
 
         if ($quest->status === 'locked') {
-            return redirect()->back()->withErrors([
-                'complete' => 'Quest masih locked, tidak bisa di-complete.',
-            ]);
+            return redirect()->back()->withErrors(['complete' => 'Quest is locked.']);
         }
 
-        // Kalau non-repeatable dan sudah done: stop (biar gak double reward)
+        // Prevent double counting for non-repeatables
         if (! $quest->is_repeatable && $quest->status === 'done') {
             return redirect()->back();
         }
 
-        // Untuk non-repeatable: set jadi done
+        // Mark as done locally
         if (! $quest->is_repeatable) {
-            $quest->update([
-                'status' => 'done',
-                'completed_at' => now(),
-            ]);
+            $quest->update(['status' => 'done', 'completed_at' => now()]);
         }
 
-        // Log completion (repeatable: setiap submit bikin log baru)
+        // Log completion
         $request->user()->questCompletions()->create([
             'quest_id' => $quest->id,
             'xp_awarded' => $quest->xp_reward,
@@ -70,45 +66,83 @@ class QuestController extends Controller
             'note' => $data['note'] ?? null,
         ]);
 
-        // Update profile + streak (NEW SYSTEM)
+        // --- CORE LOGIC: STREAK & FREEZE SYSTEM (LAZY UPDATE) ---
         $profile = $request->user()->profile;
+        
+        // PENTING: Gunakan startOfDay untuk komparasi tanggal murni
+        $today = now()->startOfDay(); 
+        
+        // 1. Weekly Freeze Reset Logic
+        // Cek apakah minggu sudah berganti sejak terakhir kali freeze dipakai?
+        // (Default start of week: Senin)
+        $currentWeekStart = now()->startOfWeek(Carbon::MONDAY)->toDateString();
+        
+        if ($profile->freezes_used_week_start !== $currentWeekStart) {
+            // Reset jatah freeze mingguan karena sudah masuk minggu baru
+            $profile->freezes_used_week_start = $currentWeekStart;
+            $profile->freezes_used_count = 0;
+        }
 
-        $today = now()->toDateString();
-        $yesterday = now()->subDay()->toDateString();
+        // 2. Streak Calculation
+        if ($profile->last_active_date) {
+            $lastActive = Carbon::parse($profile->last_active_date)->startOfDay();
+            $diffInDays = $lastActive->diffInDays($today); // Selisih hari absolut
 
-        $lastActive = $profile->last_active_date;
+            if ($diffInDays == 0) {
+                // Kasus A: Masih hari yang sama.
+                // Tidak ada perubahan streak.
+            } elseif ($diffInDays == 1) {
+                // Kasus B: Login besoknya (Perfect Streak).
+                $profile->streak_current++;
+            } else {
+                // Kasus C: Ada Gap (Bolong).
+                // diff 2 hari = bolong 1 hari (kemarin).
+                // diff 3 hari = bolong 2 hari.
+                $daysMissed = $diffInDays - 1; 
+                
+                // Cek sisa freeze minggu ini
+                // Limit misal: 2 freeze per minggu
+                $freezesLeft = max(0, 2 - $profile->freezes_used_count);
 
-        // REALTIME STREAK (leaderboard)
-        if ($lastActive === $today) {
-            // sudah aktif hari ini -> streak_current tetap
-        } elseif ($lastActive === $yesterday) {
-            $profile->streak_current = (int) ($profile->streak_current ?? 0) + 1;
+                if ($daysMissed <= $freezesLeft) {
+                    // --> SELAMAT! Streak lanjut pakai Freeze.
+                    $profile->streak_current++; 
+                    $profile->freezes_used_count += $daysMissed;
+                    $profile->freezes_used_total += $daysMissed;
+                    // Catat bahwa streak ini "diselamatkan" sampai hari ini
+                    $profile->streak_maintained_through = $today->toDateString();
+                } else {
+                    // --> GAME OVER. Reset Streak.
+                    $profile->streak_current = 1;
+                    $profile->streak_resets_total++;
+                }
+            }
         } else {
-            // aktif lagi setelah jeda (atau baru pertama) -> mulai dari 1
+            // Kasus D: User baru pertama kali
             $profile->streak_current = 1;
         }
 
-        // set last active hari ini
-        $profile->last_active_date = $today;
+        // 3. Save State
+        $profile->last_active_date = $today->toDateString();
+        
+        // Update Best Streak Record
+        if ($profile->streak_current > $profile->streak_best) {
+            $profile->streak_best = $profile->streak_current;
+        }
 
-        // update best streak
-        $profile->streak_best = max(
-            (int) ($profile->streak_best ?? 0),
-            (int) ($profile->streak_current ?? 0)
-        );
+        // Legacy Sync (Opsional, buat jaga kompatibilitas UI lama)
+        $profile->current_streak = $profile->streak_current;
+        $profile->last_quest_completed_at = $today->toDateString();
 
-        // LEGACY SYNC (biar UI lama konsisten)
-        $profile->current_streak = (int) ($profile->streak_current ?? 0);
-        $profile->last_quest_completed_at = $today;
-
-        // XP + coin
+        // Update Economy
         $profile->xp_total += $quest->xp_reward;
         $profile->coin_balance += $quest->coin_reward;
 
         $profile->save();
 
+        // 4. Badge Sync
+        // (Pastikan BadgeService sudah ada logic cek streak_best)
         app(BadgeService::class)->syncForUser($request->user());
-
 
         return redirect()->back();
     }
