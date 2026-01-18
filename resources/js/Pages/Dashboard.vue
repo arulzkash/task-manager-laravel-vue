@@ -18,6 +18,7 @@ const props = defineProps({
     habitSummary: Object,
     today: String,
     todayBlocks: Array,
+    leaderboardData: Object,
 });
 
 // --- UI STATE ---
@@ -317,7 +318,8 @@ const triggerSlashEffect = () => {
                         :max="profile.level_data.xp_needed"
                         :percent="profile.level_data.progress_percent"
                     />
-                    <div class="flex flex-wrap justify-center gap-4 md:justify-start">
+
+                    <div class="flex flex-wrap items-stretch justify-center gap-4 md:justify-start">
                         <StatCard
                             label="Treasury"
                             :value="profile.coin_balance"
@@ -332,10 +334,44 @@ const triggerSlashEffect = () => {
                         />
                         <StatCard
                             label="Habits"
-                            :value="`${habitSummary?.done_today ?? 0}/${habitSummary?.total ?? 0}`"
+                            :value="`${habitSummary?.done_today}/${habitSummary?.total}`"
                             icon="✅"
                             colorClass="text-emerald-400"
                         />
+
+                        <Link
+                            href="/leaderboard"
+                            class="group flex min-w-[140px] flex-col justify-between rounded-xl border border-slate-700 bg-slate-800/50 p-4 transition-all hover:border-indigo-500/50 hover:bg-slate-800"
+                        >
+                            <div class="flex items-start justify-between">
+                                <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Rank
+                                </span>
+                                <span class="text-xs">🏆</span>
+                            </div>
+
+                            <div class="mt-2">
+                                <div class="text-2xl font-black text-white group-hover:text-indigo-300">
+                                    #{{ leaderboardData?.rank ?? '-' }}
+                                </div>
+
+                                <div
+                                    v-if="leaderboardData?.rival && !leaderboardData?.rival?.is_king"
+                                    class="mt-1 text-[10px] text-slate-500"
+                                >
+                                    Hunt:
+                                    <span class="font-bold text-slate-300">
+                                        {{ leaderboardData.rival.name }}
+                                    </span>
+                                </div>
+                                <div
+                                    v-if="leaderboardData?.rival?.is_king"
+                                    class="mt-1 text-[10px] font-bold text-yellow-500"
+                                >
+                                    Defend the Throne!
+                                </div>
+                            </div>
+                        </Link>
                     </div>
                 </div>
             </div>

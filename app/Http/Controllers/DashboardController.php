@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -86,6 +87,58 @@ class DashboardController extends Controller
                 'note' => $b->note,
             ]);
 
+        // --- LEADERBOARD SNIPPET ---
+        // 1. Calculate My Effective Streak & Rank
+        // (Reuse the logic from LeaderboardController slightly simplified for performance)
+
+        $ghostThresholdDate = now()->subDays(4)->toDateString();
+
+        // Get Top 50 (or enough to find me) - utilizing cache is recommended in production, 
+        // but for now, we run a similar optimized query.
+        $leaderboard = DB::table('profiles')
+            ->join('users', 'users.id', '=', 'profiles.user_id')
+            ->select([
+                'profiles.user_id',
+                'users.name',
+                'profiles.streak_current',
+                'profiles.last_active_date'
+            ])
+            ->selectRaw("
+            CASE 
+                WHEN profiles.last_active_date < ? THEN 0 
+                ELSE COALESCE(profiles.streak_current, 0) 
+            END as effective_streak
+        ", [$ghostThresholdDate])
+            ->orderByDesc('effective_streak')
+            ->orderByDesc('profiles.streak_best')
+            ->limit(100) // Limit query load
+            ->get();
+
+        // Find Me
+        $myIndex = $leaderboard->search(fn($item) => $item->user_id === $user->id);
+
+        $leaderboardData = [
+            'rank' => $myIndex !== false ? $myIndex + 1 : '-',
+            'rival' => null,
+        ];
+
+        // Find Rival (The person 1 rank above me)
+        if ($myIndex !== false && $myIndex > 0) {
+            $rival = $leaderboard[$myIndex - 1];
+            $diff = ($rival->effective_streak) - ($leaderboard[$myIndex]->effective_streak);
+
+            $leaderboardData['rival'] = [
+                'name' => $rival->name,
+                'gap' => $diff + 1, // Points needed to overtake (beat them by 1)
+            ];
+        } elseif ($myIndex === 0) {
+            // You are #1
+            $leaderboardData['rival'] = [
+                'name' => 'No one',
+                'gap' => 0,
+                'is_king' => true
+            ];
+        }
 
 
         return Inertia::render('Dashboard', [
@@ -100,8 +153,7 @@ class DashboardController extends Controller
                 ->active()
                 ->get(),
             'todayBlocks' => $todayBlocks,
+            'leaderboardData' => $leaderboardData,
         ]);
     }
-
-    
 }
