@@ -459,7 +459,7 @@ const weekRangeLabel = computed(() => {
         <!-- STICKY HEADER (mobile-first) -->
         <!-- ===================== -->
         <div
-            class="sticky top-0 z-40 border-b border-slate-800/50 bg-slate-950/70 backdrop-blur-xl transition-all duration-300"
+            class="sticky top-0 z-40 border-b border-slate-800/50 bg-slate-950/85 transition-all duration-300"
         >
             <div
                 class="mx-auto flex max-w-4xl flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between"
@@ -1083,7 +1083,7 @@ const weekRangeLabel = computed(() => {
         <!-- ===================== -->
         <div
             v-if="meRow"
-            class="fixed bottom-0 left-0 z-50 w-full border-t border-indigo-500/20 bg-slate-900/85 p-3 shadow-[0_-5px_25px_rgba(0,0,0,0.3)] backdrop-blur-md md:hidden"
+            class="fixed bottom-0 left-0 z-50 w-full border-t border-indigo-500/20 bg-slate-900/92 p-3 shadow-[0_-5px_25px_rgba(0,0,0,0.3)] md:hidden"
         >
             <div
                 class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"
@@ -1215,7 +1215,8 @@ const weekRangeLabel = computed(() => {
         transparent 65%
     );
     background-size: 250% 250%;
-    animation: shine-anim 4s infinite linear;
+    /* PERF: disable infinite animation (major repaint cost) */
+    animation: none !important;
 }
 @keyframes shine-anim {
     0% {
