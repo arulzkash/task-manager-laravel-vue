@@ -1,6 +1,6 @@
 <!-- resources/js/Pages/Leaderboard/Index.vue -->
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -56,6 +56,20 @@ const badgeLore = (row) => row?.badge_top?.description || row?.badge_top?.name |
 
 const nowMs = ref(Date.now());
 let nowTicker = null;
+
+const startNowTicker = () => {
+    if (nowTicker) return;
+    nowMs.value = Date.now();
+    nowTicker = window.setInterval(() => {
+        nowMs.value = Date.now();
+    }, 30_000);
+};
+
+const stopNowTicker = () => {
+    if (!nowTicker) return;
+    window.clearInterval(nowTicker);
+    nowTicker = null;
+};
 
 const formatAgo = (iso) => {
     if (!iso) return '—';
@@ -393,20 +407,30 @@ const onScrollClose = () => {
 };
 
 onMounted(() => {
-    nowTicker = window.setInterval(() => {
-        nowMs.value = Date.now();
-    }, 30_000);
+    computeWeekRangeLabel();
     document.addEventListener('pointerdown', onOutside, { capture: true });
     window.addEventListener('keydown', onEsc);
     window.addEventListener('scroll', onScrollClose, { passive: true, capture: true });
     window.addEventListener('resize', onScrollClose, { passive: true });
+
+    // PERF: ticker only for "recent"
+    if (currentView.value === 'recent') startNowTicker();
 });
 onBeforeUnmount(() => {
-    if (nowTicker) window.clearInterval(nowTicker);
+    stopNowTicker();
     document.removeEventListener('pointerdown', onOutside, { capture: true });
     window.removeEventListener('keydown', onEsc);
     window.removeEventListener('scroll', onScrollClose, { capture: true });
     window.removeEventListener('resize', onScrollClose);
+});
+
+watch(currentView, (v) => {
+    if (v === 'recent') startNowTicker();
+    else stopNowTicker();
+});
+
+watch(currentView, (v) => {
+    if (v === 'active7') computeWeekRangeLabel();
 });
 
 const getBadgeIcon = (key) => {
@@ -427,26 +451,23 @@ const getBadgeIcon = (key) => {
     return icons[key] || '🎖️';
 };
 
-const weekStartDate = computed(() => {
-    const d = new Date(nowMs.value);
+const weekRangeLabel = ref('');
+
+const computeWeekRangeLabel = () => {
+    const d = new Date();
     const day = d.getDay(); // 0 Sun .. 6 Sat
     const diff = (day + 6) % 7; // Monday=0
     d.setDate(d.getDate() - diff);
     d.setHours(0, 0, 0, 0);
-    return d;
-});
 
-const weekEndDate = computed(() => {
-    const d = new Date(weekStartDate.value);
-    d.setDate(d.getDate() + 6);
-    d.setHours(23, 59, 59, 999);
-    return d;
-});
+    const start = new Date(d);
+    const end = new Date(d);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
 
-const weekRangeLabel = computed(() => {
     const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-    return `This week · ${fmt.format(weekStartDate.value)} – ${fmt.format(weekEndDate.value)}`;
-});
+    weekRangeLabel.value = `This week · ${fmt.format(start)} – ${fmt.format(end)}`;
+};
 </script>
 
 <template>
@@ -1083,7 +1104,7 @@ const weekRangeLabel = computed(() => {
         <!-- ===================== -->
         <div
             v-if="meRow"
-            class="fixed bottom-0 left-0 z-50 w-full border-t border-indigo-500/20 bg-slate-900/92 p-3 shadow-[0_-5px_25px_rgba(0,0,0,0.3)] md:hidden"
+            class="bg-slate-900/92 fixed bottom-0 left-0 z-50 w-full border-t border-indigo-500/20 p-3 shadow-[0_-5px_25px_rgba(0,0,0,0.3)] md:hidden"
         >
             <div
                 class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"
