@@ -47,7 +47,11 @@ const statusCfg = (status) => {
     };
 };
 
-const badgeLabel = (row) => row?.badge_top?.name || 'No Badge';
+const badgeLabel = (row) => {
+    const b = row?.badge_top;
+    if (!b) return 'No Badge';
+    return `${getBadgeIcon(b.key)} ${b.name}`;
+};
 const badgeLore = (row) => row?.badge_top?.description || row?.badge_top?.name || 'No lore available.';
 
 const formatAgo = (iso) => {
@@ -260,6 +264,24 @@ onBeforeUnmount(() => {
     window.removeEventListener('scroll', onScrollClose, { capture: true });
     window.removeEventListener('resize', onScrollClose);
 });
+
+const getBadgeIcon = (key) => {
+    const icons = {
+        // Streak Badges
+        streak_3: '👞',
+        streak_7: '🔥',
+        streak_14: '⚔️',
+        streak_30: '🛡️',
+        streak_60: '💎',
+        streak_100: '👑',
+
+        // Recovery Badges
+        second_wind: '🍃',
+        comeback_kid: '❤️‍🔥',
+    };
+
+    return icons[key] || '🎖️';
+};
 </script>
 
 <template>
@@ -382,7 +404,7 @@ onBeforeUnmount(() => {
                                     @pointerdown.stop.prevent="(e) => toggleLore(e, champion)"
                                     @click.stop.prevent="(e) => toggleLore(e, champion)"
                                 >
-                                    🏅 {{ badgeLabel(champion) }}
+                                    {{ badgeLabel(champion) }}
                                 </button>
                             </div>
 
@@ -495,7 +517,7 @@ onBeforeUnmount(() => {
                                 @pointerdown.stop.prevent="(e) => toggleLore(e, row)"
                                 @click.stop.prevent="(e) => toggleLore(e, row)"
                             >
-                                🏅 {{ badgeLabel(row) }}
+                                {{ badgeLabel(row) }}
                             </button>
                         </div>
 
@@ -600,7 +622,7 @@ onBeforeUnmount(() => {
                                             @pointerdown.stop.prevent="(e) => toggleLore(e, champion)"
                                             @click.stop.prevent="(e) => toggleLore(e, champion)"
                                         >
-                                            🏅 {{ badgeLabel(champion) }}
+                                            {{ badgeLabel(champion) }}
                                         </button>
                                     </div>
 
@@ -727,7 +749,7 @@ onBeforeUnmount(() => {
                                                     @pointerdown.stop.prevent="(e) => toggleLore(e, row)"
                                                     @click.stop.prevent="(e) => toggleLore(e, row)"
                                                 >
-                                                    🏅 {{ badgeLabel(row) }}
+                                                    {{ badgeLabel(row) }}
                                                 </button>
 
                                                 <span

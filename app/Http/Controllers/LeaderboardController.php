@@ -134,15 +134,21 @@ class LeaderboardController extends Controller
         $badges = DB::table('user_badges')
             ->join('badges', 'badges.id', '=', 'user_badges.badge_id')
             ->whereIn('user_badges.user_id', $visibleUserIds)
-            ->where('badges.category', 'streak')
-            ->select('user_badges.user_id', 'badges.name', 'badges.key', 'badges.description')
+            ->whereIn('badges.category', ['recovery', 'streak'])
+            ->select('user_badges.user_id', 'badges.name', 'badges.category', 'badges.key', 'badges.description')
             ->orderBy('badges.id', 'desc')
             ->get()
             ->groupBy('user_id');
 
         $mapFunction = function ($row) use ($badges) {
             if (!$row) return null;
-            $badge = isset($badges[$row->user_id]) ? $badges[$row->user_id]->first() : null;
+            $badge = null;
+            if (isset($badges[$row->user_id])) {
+                $list = $badges[$row->user_id];
+
+                // prioritas streak, kalau gak ada baru recovery
+                $badge = $list->firstWhere('category', 'streak') ?? $list->firstWhere('category', 'recovery');
+            }
 
             return [
                 'rank' => $row->rank,
@@ -157,7 +163,7 @@ class LeaderboardController extends Controller
                 'last_active_at' => $row->last_active_at, // Ini yang penting buat time ago
                 'badge_top' => $badge ? [
                     'name' => $badge->name,
-                    'category' => 'streak',
+                    'category' => $badge->category,
                     'key' => $badge->key,
                     'description' => $badge->description,
                 ] : null,
