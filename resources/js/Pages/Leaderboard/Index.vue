@@ -16,7 +16,7 @@ const currentView = ref('current');
 const viewOptions = [
     { key: 'current', label: 'Streak', icon: '🔥', mobileLabel: 'Streak' },
     { key: 'best', label: 'Best Streak', icon: '🏆', mobileLabel: 'Best' },
-    { key: 'active7', label: 'Active 7D', icon: '⚡', mobileLabel: '7 Days' },
+    { key: 'active7', label: 'This Week', icon: '⚡', mobileLabel: 'Week' },
     { key: 'recent', label: 'Last Seen', icon: '🕒', mobileLabel: 'Seen' },
 ];
 
@@ -54,9 +54,12 @@ const badgeLabel = (row) => {
 };
 const badgeLore = (row) => row?.badge_top?.description || row?.badge_top?.name || 'No lore available.';
 
+const nowMs = ref(Date.now());
+let nowTicker = null;
+
 const formatAgo = (iso) => {
     if (!iso) return '—';
-    const diff = Date.now() - new Date(iso).getTime();
+    const diff = nowMs.value - new Date(iso).getTime();
     if (diff < 60_000) return 'NOW';
     const minutes = Math.floor(diff / 60_000);
     if (minutes < 60) return `${minutes}m`;
@@ -253,12 +256,16 @@ const onScrollClose = () => {
 };
 
 onMounted(() => {
+    nowTicker = window.setInterval(() => {
+        nowMs.value = Date.now();
+    }, 30_000);
     document.addEventListener('pointerdown', onOutside, { capture: true });
     window.addEventListener('keydown', onEsc);
     window.addEventListener('scroll', onScrollClose, { passive: true, capture: true });
     window.addEventListener('resize', onScrollClose, { passive: true });
 });
 onBeforeUnmount(() => {
+    if (nowTicker) window.clearInterval(nowTicker);
     document.removeEventListener('pointerdown', onOutside, { capture: true });
     window.removeEventListener('keydown', onEsc);
     window.removeEventListener('scroll', onScrollClose, { capture: true });
@@ -282,6 +289,27 @@ const getBadgeIcon = (key) => {
 
     return icons[key] || '🎖️';
 };
+
+const weekStartDate = computed(() => {
+    const d = new Date(nowMs.value);
+    const day = d.getDay(); // 0 Sun .. 6 Sat
+    const diff = (day + 6) % 7; // Monday=0
+    d.setDate(d.getDate() - diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+});
+
+const weekEndDate = computed(() => {
+    const d = new Date(weekStartDate.value);
+    d.setDate(d.getDate() + 6);
+    d.setHours(23, 59, 59, 999);
+    return d;
+});
+
+const weekRangeLabel = computed(() => {
+    const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+    return `This week · ${fmt.format(weekStartDate.value)} – ${fmt.format(weekEndDate.value)}`;
+});
 </script>
 
 <template>
@@ -351,6 +379,14 @@ const getBadgeIcon = (key) => {
         <!-- MOBILE MAIN (keep “old” feel) -->
         <!-- ===================== -->
         <main class="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-6 md:hidden">
+            <!-- WEEK BANNER (Active7 only) -->
+            <div
+                v-if="currentView === 'active7'"
+                class="rounded-2xl border border-purple-500/15 bg-slate-900/30 px-4 py-2 text-center text-[11px] font-bold text-slate-300"
+            >
+                ⚡ {{ weekRangeLabel }}
+            </div>
+
             <!-- CHAMPION (mobile visible, compact, clear #1) -->
             <section
                 v-if="champion"
@@ -575,6 +611,14 @@ const getBadgeIcon = (key) => {
 
             <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-12">
                 <section class="space-y-4 lg:col-span-8">
+                    <!-- WEEK BANNER (Active7 only) -->
+                    <div
+                        v-if="currentView === 'active7'"
+                        class="rounded-2xl border border-purple-500/15 bg-slate-900/35 px-4 py-2 text-center text-xs font-bold text-slate-300"
+                    >
+                        ⚡ {{ weekRangeLabel }}
+                    </div>
+
                     <!-- Champion desktop -->
                     <div
                         v-if="champion"
