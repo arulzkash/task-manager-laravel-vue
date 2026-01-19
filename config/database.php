@@ -56,6 +56,13 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                
+                #cloud tidb
+                // PDO::MYSQL_ATTR_SSL_CA => base_path('storage/cacert.pem'),
+
+                // // Kita set true supaya dia pakai file di atas, 
+                // // tapi kalau masih error, nanti ubah jadi false.
+                // PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true
             ]) : [],
         ],
 
@@ -144,7 +151,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
         ],
 
         'default' => [
