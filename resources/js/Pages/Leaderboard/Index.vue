@@ -108,6 +108,84 @@ const metricCfg = (row) => {
     return { val: '-', label: '-', color: 'text-slate-300', unit: '' };
 };
 
+// --- RPG Premium (Genshin-ish): Rarity Chip for metrics ---
+const metricIcon = computed(() => {
+    if (currentView.value === 'current') return '🔥';
+    if (currentView.value === 'best') return '🏆';
+    if (currentView.value === 'active7') return '⚡';
+    if (currentView.value === 'recent') return '🕒';
+    return '✦';
+});
+
+const tierFromStreak = (n) => {
+    // 0–2 common, 3–6 uncommon, 7–13 rare, 14–29 epic, 30+ legendary
+    if (n >= 30) return 'legendary';
+    if (n >= 14) return 'epic';
+    if (n >= 7) return 'rare';
+    if (n >= 3) return 'uncommon';
+    return 'common';
+};
+
+const tierFromActive = (n) => {
+    // 0–1 common, 2–3 uncommon, 4–5 rare, 6 epic, 7 legendary
+    if (n >= 7) return 'legendary';
+    if (n >= 6) return 'epic';
+    if (n >= 4) return 'rare';
+    if (n >= 2) return 'uncommon';
+    return 'common';
+};
+
+const tierFromRecent = (iso) => {
+    if (!iso) return 'common';
+    const diff = nowMs.value - new Date(iso).getTime();
+    if (diff <= 60 * 60 * 1000) return 'legendary'; // <= 1h
+    if (diff <= 6 * 60 * 60 * 1000) return 'epic'; // <= 6h
+    if (diff <= 24 * 60 * 60 * 1000) return 'rare'; // <= 24h
+    return 'common';
+};
+
+const rarityChipClass = (tier) => {
+    // Glossy + subtle glow (Genshin-ish)
+    const base =
+        'inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 font-mono font-black tracking-tight ' +
+        'shadow-[0_10px_25px_rgba(0,0,0,0.25)] backdrop-blur-sm ' +
+        'ring-1 ring-white/5';
+
+    const tiers = {
+        common: 'border-slate-700/60 bg-slate-950/40 text-slate-200',
+        uncommon:
+            'border-emerald-400/20 bg-gradient-to-r from-emerald-500/18 to-slate-950/35 text-emerald-100 shadow-[0_0_24px_rgba(16,185,129,0.10)]',
+        rare: 'border-sky-400/20 bg-gradient-to-r from-sky-500/18 to-slate-950/35 text-sky-100 shadow-[0_0_24px_rgba(56,189,248,0.10)]',
+        epic: 'border-purple-400/20 bg-gradient-to-r from-purple-500/18 to-slate-950/35 text-purple-100 shadow-[0_0_24px_rgba(168,85,247,0.12)]',
+        legendary:
+            'border-amber-400/25 bg-gradient-to-r from-amber-500/18 to-slate-950/35 text-amber-100 shadow-[0_0_28px_rgba(245,158,11,0.14)]',
+    };
+
+    return `${base} ${tiers[tier] || tiers.common}`;
+};
+
+const metricTier = (row) => {
+    if (!row) return 'common';
+
+    if (currentView.value === 'current') return tierFromStreak(row.streak_current ?? 0);
+    if (currentView.value === 'best') return tierFromStreak(row.streak_best ?? 0);
+    if (currentView.value === 'active7') return tierFromActive(row.active_days_last_7d ?? 0);
+    if (currentView.value === 'recent') return tierFromRecent(row.last_active_at);
+
+    return 'common';
+};
+
+const metricChipText = (row) => {
+    if (!row) return '—';
+
+    if (currentView.value === 'current') return String(row.streak_current ?? 0);
+    if (currentView.value === 'best') return String(row.streak_best ?? 0);
+    if (currentView.value === 'active7') return `${row.active_days_last_7d ?? 0}/7`;
+    if (currentView.value === 'recent') return formatAgo(row.last_active_at);
+
+    return '—';
+};
+
 // --- Sorting (dynamic rank per filter) ---
 const sortedItems = computed(() => {
     const list = [...(props.items || [])];
@@ -460,11 +538,11 @@ const weekRangeLabel = computed(() => {
                             >
                                 {{ metricCfg(champion).label }}
                             </div>
-                            <div
-                                :class="metricCfg(champion).color"
-                                class="text-4xl font-black leading-none tracking-tight drop-shadow-sm filter"
-                            >
-                                {{ metricCfg(champion).val }}
+                            <div class="flex justify-end">
+                                <div :class="rarityChipClass(metricTier(champion))" class="text-3xl">
+                                    <span class="opacity-90">{{ metricIcon }}</span>
+                                    <span>{{ metricChipText(champion) }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -583,13 +661,11 @@ const weekRangeLabel = computed(() => {
 
                     <div class="relative z-10 text-right">
                         <div
-                            :class="metricCfg(row).color"
-                            class="origin-right font-mono text-lg font-black leading-none drop-shadow-sm filter transition-transform group-hover:scale-110"
+                            :class="rarityChipClass(metricTier(row))"
+                            class="origin-right text-base transition-transform group-hover:scale-110"
                         >
-                            {{ metricCfg(row).val }}
-                        </div>
-                        <div class="mt-0.5 text-[8px] font-bold uppercase text-slate-600">
-                            {{ metricCfg(row).unit }}
+                            <span class="opacity-90">{{ metricIcon }}</span>
+                            <span>{{ metricChipText(row) }}</span>
                         </div>
                     </div>
                 </div>
@@ -689,11 +765,11 @@ const weekRangeLabel = computed(() => {
                                 <div class="text-[10px] font-black uppercase tracking-widest text-slate-500">
                                     {{ metricCfg(champion).label }}
                                 </div>
-                                <div
-                                    class="mt-1 font-mono text-4xl font-black leading-none"
-                                    :class="metricCfg(champion).color"
-                                >
-                                    {{ metricCfg(champion).val }}
+                                <div class="mt-2 flex justify-end">
+                                    <div :class="rarityChipClass(metricTier(champion))" class="text-3xl">
+                                        <span class="opacity-90">{{ metricIcon }}</span>
+                                        <span>{{ metricChipText(champion) }}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -831,19 +907,17 @@ const weekRangeLabel = computed(() => {
                                         </div>
                                     </div>
 
-                                    <div
-                                        class="rounded-2xl border border-slate-700 bg-slate-950/35 px-4 py-3 text-right"
-                                    >
+                                    <div class="rounded-2xl px-4 py-3 text-right">
                                         <div
                                             class="text-[9px] font-black uppercase tracking-widest text-slate-500"
                                         >
                                             {{ metricCfg(row).label }}
                                         </div>
-                                        <div
-                                            class="mt-1 font-mono text-2xl font-black leading-none"
-                                            :class="metricCfg(row).color"
-                                        >
-                                            {{ metricCfg(row).val }}
+                                        <div class="mt-2 flex justify-end">
+                                            <div :class="rarityChipClass(metricTier(row))" class="text-xl">
+                                                <span class="opacity-90">{{ metricIcon }}</span>
+                                                <span>{{ metricChipText(row) }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -966,11 +1040,11 @@ const weekRangeLabel = computed(() => {
                     <div class="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
                         {{ metricCfg(meRow).label }}
                     </div>
-                    <div
-                        :class="metricCfg(meRow).color"
-                        class="font-mono text-2xl font-black leading-none drop-shadow-sm filter"
-                    >
-                        {{ metricCfg(meRow).val }}
+                    <div class="flex justify-end">
+                        <div :class="rarityChipClass(metricTier(meRow))" class="text-lg">
+                            <span class="opacity-90">{{ metricIcon }}</span>
+                            <span>{{ metricChipText(meRow) }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
