@@ -1236,7 +1236,7 @@ const computeWeekRangeLabel = () => {
         <!-- ===================== -->
         <div
             v-if="meRow"
-            class="fixed bottom-0 left-0 z-50 w-full border-t border-indigo-500/20 bg-slate-900/85 p-3 shadow-[0_-5px_25px_rgba(0,0,0,0.3)] backdrop-blur-md md:hidden"
+            class="fixed bottom-0 left-0 z-40 w-full border-t border-indigo-500/20 bg-slate-900/85 p-3 shadow-[0_-5px_25px_rgba(0,0,0,0.3)] backdrop-blur-md md:hidden"
         >
             <div
                 class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"

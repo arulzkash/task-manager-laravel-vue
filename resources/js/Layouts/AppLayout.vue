@@ -202,7 +202,7 @@ const showingNavigationDropdown = ref(false);
 
             <div
                 :class="{ block: showingNavigationDropdown, hidden: !showingNavigationDropdown }"
-                class="border-b border-slate-700 bg-slate-800 transition-all duration-200 ease-in-out md:hidden"
+                class="max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-slate-700 bg-slate-800 pb-24 transition-all duration-200 ease-in-out md:hidden"
             >
                 <div class="space-y-1 pb-3 pt-2">
                     <Link
