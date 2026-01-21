@@ -121,6 +121,7 @@ const TEMPLATES = [
 ];
 
 const selectedTemplateId = ref('');
+const showMyTemplates = ref(false);
 
 // ---------- Helpers ----------
 const newId = () => {
@@ -266,6 +267,17 @@ const saveAsTemplate = () => {
         }
     );
 };
+
+const deleteTemplate = (tpl) => {
+    if (!tpl?.id) return;
+    if (!confirm(`Delete template "${tpl.name}"?`)) return;
+
+    router.delete(`/journal/templates/${tpl.id}`, {
+        preserveScroll: true,
+        onSuccess: () => router.reload({ only: ['templates'] }),
+    });
+};
+
 
 // ---------- Server save (SAVE = AUTO CLAIM if eligible) ----------
 const saveToServer = () => {
@@ -470,6 +482,7 @@ onBeforeUnmount(() => {
                                     {{ t.name }}
                                 </option>
                             </optgroup>
+                            
 
                             <optgroup v-if="myTemplates.length" label="My Templates">
                                 <option v-for="t in myTemplates" :key="t.id" :value="t.id">
@@ -477,6 +490,7 @@ onBeforeUnmount(() => {
                                 </option>
                             </optgroup>
                         </select>
+                        
 
                         <button
                             @click="insertTemplate"
@@ -500,9 +514,53 @@ onBeforeUnmount(() => {
                 </div>
             </div>
 
+            <div class="mt-2 flex items-center justify-between">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    My Templates
+                </div>
+                <button
+                    v-if="(templates?.length || 0) > 0"
+                    @click="showMyTemplates = !showMyTemplates"
+                    class="rounded bg-slate-700 px-2 py-1 text-[10px] font-bold text-slate-200 hover:bg-slate-600"
+                >
+                    {{ showMyTemplates ? 'Hide' : 'Manage' }}
+                </button>
+            </div>
+
+            <div
+                v-if="showMyTemplates && (templates?.length || 0) > 0"
+                class="mt-2 rounded-xl border border-slate-700 bg-slate-900/30 p-3"
+            >
+                <div class="flex flex-col gap-2">
+                    <div
+                        v-for="tpl in templates"
+                        :key="tpl.id"
+                        class="flex items-center justify-between gap-2 rounded-lg border border-slate-700/60 bg-slate-900 px-3 py-2"
+                    >
+                        <div class="min-w-0">
+                            <div class="truncate text-sm font-bold text-slate-200">
+                                {{ tpl.name }}
+                            </div>
+                            <div class="text-[11px] text-slate-500">
+                                {{ (tpl.sections?.length || 0) }} sections
+                            </div>
+                        </div>
+
+                        <button
+                            @click="deleteTemplate(tpl)"
+                            class="rounded bg-red-600/20 px-2 py-1 text-xs font-bold text-red-200 hover:bg-red-600/30"
+                            title="Delete template"
+                        >
+                            x
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div v-if="form.sections.length === 0" class="text-sm italic text-slate-500">
                 No sections yet. You can use free writing only.
             </div>
+            
 
             <div v-else class="space-y-3">
                 <div
