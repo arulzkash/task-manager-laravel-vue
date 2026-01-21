@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\JournalEntry;
+use App\Models\JournalTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -46,10 +47,20 @@ class JournalPageController extends Controller
             ->whereDate('date', $date)
             ->first();
 
+        $templates = JournalTemplate::where('user_id', $user->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'sections'])
+            ->map(fn($t) => [
+                'id' => $t->id,
+                'name' => $t->name,
+                'sections' => $t->sections ?? [],
+            ]);
+
         return Inertia::render('Journal/Index', [
             'date' => $date,
             'todayKey' => $todayKey,
             'entry' => $this->entryPayload($entry),
+            'templates' => $templates,
         ]);
     }
 

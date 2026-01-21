@@ -16,13 +16,13 @@ use App\Http\Controllers\CompletionLogPageController;
 use App\Http\Controllers\HabitController;
 use App\Http\Controllers\HabitPageController;
 use App\Http\Controllers\JournalPageController;
+use App\Http\Controllers\JournalTemplateController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\TimeBlockController;
 use App\Http\Controllers\TimeBlockPageController;
 use App\Http\Controllers\TreasuryController;
 use App\Http\Controllers\TreasuryLogPageController;
 use App\Http\Controllers\TreasuryPurchaseLogController;
-
 
 require __DIR__ . '/auth.php';
 
@@ -111,8 +111,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/leaderboard', [LeaderboardController::class, 'index']);
 
     // JOURNAL
-    Route::get('/journal', [JournalPageController::class, 'index'])->name('journal');
+    Route::get('/journal', [JournalPageController::class, 'index'])->name('journal.index');
     Route::put('/journal', [JournalPageController::class, 'save'])->name('journal.save');
+
+    Route::post('/journal/templates', [JournalTemplateController::class, 'store'])->name('journal.templates.store');
+    Route::delete('/journal/templates/{template}', [JournalTemplateController::class, 'destroy'])->name('journal.templates.destroy');
+
     Route::match(['GET', 'HEAD'], '/journal/ping', fn() => response('', 204))->name('journal.ping');
 
     Route::get('/debug/badges', [BadgeDebugController::class, 'index']);

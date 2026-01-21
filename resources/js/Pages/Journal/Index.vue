@@ -6,15 +6,13 @@ import debounce from 'lodash/debounce';
 import { onBeforeUnmount } from 'vue';
 import { nextTick } from 'vue';
 
-
-
-
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
     date: String, // YYYY-MM-DD (selected)
     todayKey: String, // YYYY-MM-DD (Jakarta) from backend
     entry: Object, // null or entry payload
+    templates: Array,
 });
 
 // ---------- Templates (PLAIN names) ----------
@@ -122,7 +120,7 @@ const TEMPLATES = [
     },
 ];
 
-const selectedTemplate = ref('');
+const selectedTemplateId = ref('');
 
 // ---------- Helpers ----------
 const newId = () => {
@@ -201,11 +199,10 @@ onMounted(() => {
 
 // ---------- Sections ops ----------
 const addSection = async () => {
-  const id = newId();
-  form.sections.push({ id, title: '', content: '' });
-  scrollToSection(id);
+    const id = newId();
+    form.sections.push({ id, title: '', content: '' });
+    scrollToSection(id);
 };
-
 
 const removeSection = (idx) => {
     form.sections.splice(idx, 1);
@@ -218,20 +215,57 @@ const moveSection = (from, to) => {
 };
 
 const insertTemplate = async () => {
-  const t = TEMPLATES.find((x) => x.name === selectedTemplate.value);
-  if (!t) return;
+    const t = insertOptions.value.find((x) => x.id === selectedTemplateId.value);
+    if (!t) return;
 
-  const firstNewId = newId();
-  form.sections.push({ id: firstNewId, title: t.sections[0]?.title ?? '', content: '' });
+    const firstNewId = newId();
+    const secs = t.sections ?? [];
+    if (!secs.length) return;
 
-  for (let i = 1; i < t.sections.length; i++) {
-    form.sections.push({ id: newId(), title: t.sections[i].title, content: '' });
-  }
+    form.sections.push({ id: firstNewId, title: secs[0].title ?? '', content: '' });
+    for (let i = 1; i < secs.length; i++) {
+        form.sections.push({ id: newId(), title: secs[i].title ?? '', content: '' });
+    }
 
-  selectedTemplate.value = '';
-  scrollToSection(firstNewId);
+    selectedTemplateId.value = '';
+    scrollToSection(firstNewId);
 };
 
+const builtInTemplates = TEMPLATES.map((t) => ({
+    id: `builtin:${t.name}`,
+    name: t.name,
+    sections: t.sections.map((s) => ({ title: s.title })),
+}));
+
+const myTemplates = computed(() =>
+    (props.templates ?? []).map((t) => ({
+        id: `user:${t.id}`,
+        name: t.name,
+        sections: (t.sections ?? []).map((s) => ({ title: s.title })),
+    }))
+);
+
+const insertOptions = computed(() => [...builtInTemplates, ...myTemplates.value]);
+
+const saveAsTemplate = () => {
+    const name = window.prompt('Template name?');
+    if (!name) return;
+
+    router.post(
+        '/journal/templates',
+        {
+            name,
+            sections: (form.sections ?? []).map((s) => ({ title: s.title })),
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                // refresh props.templates
+                router.reload({ only: ['templates'] });
+            },
+        }
+    );
+};
 
 // ---------- Server save (SAVE = AUTO CLAIM if eligible) ----------
 const saveToServer = () => {
@@ -260,10 +294,10 @@ const saveToServer = () => {
 };
 
 const scrollToSection = async (id) => {
-  await nextTick();
-  const el = document.getElementById(`sec-${id}`);
-  if (!el) return;
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    await nextTick();
+    const el = document.getElementById(`sec-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 let keepaliveTimer = null;
@@ -429,10 +463,21 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="flex flex-col gap-2 sm:flex-row">
                     <div class="flex gap-2">
-                        <select v-model="selectedTemplate" class="input-dark w-full sm:w-56">
+                        <select v-model="selectedTemplateId" class="input-dark w-full sm:w-56">
                             <option value="">Insert template…</option>
-                            <option v-for="t in TEMPLATES" :key="t.name" :value="t.name">{{ t.name }}</option>
+                            <optgroup label="Built-in">
+                                <option v-for="t in builtInTemplates" :key="t.id" :value="t.id">
+                                    {{ t.name }}
+                                </option>
+                            </optgroup>
+
+                            <optgroup v-if="myTemplates.length" label="My Templates">
+                                <option v-for="t in myTemplates" :key="t.id" :value="t.id">
+                                    {{ t.name }}
+                                </option>
+                            </optgroup>
                         </select>
+
                         <button
                             @click="insertTemplate"
                             class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-bold text-slate-200 hover:bg-slate-600"
@@ -445,6 +490,12 @@ onBeforeUnmount(() => {
                         class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-bold text-slate-200 hover:bg-slate-600"
                     >
                         + Add Section
+                    </button>
+                    <button
+                        @click="saveAsTemplate"
+                        class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-bold text-slate-200 hover:bg-slate-600"
+                    >
+                        Save as Template
                     </button>
                 </div>
             </div>
