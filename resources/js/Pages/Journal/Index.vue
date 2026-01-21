@@ -13,6 +13,7 @@ const props = defineProps({
     todayKey: String, // YYYY-MM-DD (Jakarta) from backend
     entry: Object, // null or entry payload
     templates: Array,
+    title: String,
 });
 
 // ---------- Templates (PLAIN names) ----------
@@ -134,6 +135,7 @@ const draftKey = computed(() => `journal:draft:${props.date}`);
 // ---------- Form ----------
 const form = useForm({
     date: props.date,
+    title: props.entry?.title ?? '',
     body: props.entry?.body ?? '',
     sections: props.entry?.sections ?? [],
     // user-set reward (today only, one-time)
@@ -152,6 +154,7 @@ const goToDate = (d) => {
 const saveDraftLocal = debounce(() => {
     const payload = {
         date: form.date,
+        title: form.title,
         body: form.body,
         sections: form.sections,
         savedAt: Date.now(),
@@ -160,7 +163,7 @@ const saveDraftLocal = debounce(() => {
 }, 500);
 
 watch(
-    () => [form.body, form.sections],
+    () => [form.title, form.body, form.sections],
     () => saveDraftLocal(),
     { deep: true }
 );
@@ -172,6 +175,7 @@ const restoreDraft = () => {
     if (!raw) return;
     try {
         const d = JSON.parse(raw);
+        form.title = d.title ?? '';
         form.body = d.body ?? '';
         form.sections = d.sections ?? [];
         hasLocalDraft.value = false;
@@ -193,6 +197,14 @@ onMounted(() => {
         const serverSections = JSON.stringify(props.entry?.sections ?? []);
         const localSections = JSON.stringify(d.sections ?? []);
         if ((d.body ?? '') !== serverBody || localSections !== serverSections) {
+            hasLocalDraft.value = true;
+        }
+        const serverTitle = props.entry?.title ?? '';
+        if (
+            (d.title ?? '') !== serverTitle ||
+            (d.body ?? '') !== serverBody ||
+            localSections !== serverSections
+        ) {
             hasLocalDraft.value = true;
         }
     } catch {}
@@ -277,7 +289,6 @@ const deleteTemplate = (tpl) => {
         onSuccess: () => router.reload({ only: ['templates'] }),
     });
 };
-
 
 // ---------- Server save (SAVE = AUTO CLAIM if eligible) ----------
 const saveToServer = () => {
@@ -456,6 +467,16 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
+        <div class="space-y-2 rounded-xl border border-slate-700 bg-slate-800 p-4">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Title (optional)</div>
+            <input
+                v-model="form.title"
+                class="input-dark w-full"
+                placeholder='e.g. "Shipping day", "Feeling low", "Big win"'
+                maxlength="160"
+            />
+        </div>
+
         <!-- Free writing -->
         <div class="space-y-2 rounded-xl border border-slate-700 bg-slate-800 p-4">
             <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Free Writing</div>
@@ -482,7 +503,6 @@ onBeforeUnmount(() => {
                                     {{ t.name }}
                                 </option>
                             </optgroup>
-                            
 
                             <optgroup v-if="myTemplates.length" label="My Templates">
                                 <option v-for="t in myTemplates" :key="t.id" :value="t.id">
@@ -490,7 +510,6 @@ onBeforeUnmount(() => {
                                 </option>
                             </optgroup>
                         </select>
-                        
 
                         <button
                             @click="insertTemplate"
@@ -515,9 +534,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="mt-2 flex items-center justify-between">
-                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    My Templates
-                </div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">My Templates</div>
                 <button
                     v-if="(templates?.length || 0) > 0"
                     @click="showMyTemplates = !showMyTemplates"
@@ -542,7 +559,7 @@ onBeforeUnmount(() => {
                                 {{ tpl.name }}
                             </div>
                             <div class="text-[11px] text-slate-500">
-                                {{ (tpl.sections?.length || 0) }} sections
+                                {{ tpl.sections?.length || 0 }} sections
                             </div>
                         </div>
 
@@ -560,7 +577,6 @@ onBeforeUnmount(() => {
             <div v-if="form.sections.length === 0" class="text-sm italic text-slate-500">
                 No sections yet. You can use free writing only.
             </div>
-            
 
             <div v-else class="space-y-3">
                 <div

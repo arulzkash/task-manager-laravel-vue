@@ -7,9 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class JournalEntry extends Model
 {
     protected $fillable = [
-        'date','body','sections',
-        'xp_awarded','coin_awarded','rewarded_at',
+        'user_id',
+        'date',
+        'title', // +++
+        'body',
+        'sections',
+        'xp_awarded',
+        'coin_awarded',
+        'rewarded_at',
     ];
+
 
     protected $casts = [
         'date' => 'date',
@@ -22,4 +29,3 @@ class JournalEntry extends Model
         return $this->belongsTo(User::class);
     }
 }
-

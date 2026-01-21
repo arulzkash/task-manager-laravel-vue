@@ -23,6 +23,7 @@ class JournalPageController extends Controller
 
         return [
             'id' => $entry->id,
+            'title' => $entry->title,
             'date' => $entry->date?->toDateString(),
             'body' => $entry->body,
             'sections' => $entry->sections ?? [],
@@ -70,6 +71,7 @@ class JournalPageController extends Controller
 
         $data = $request->validate([
             'date' => ['required', 'date_format:Y-m-d'],
+            'title' => ['nullable', 'string', 'max:160'],
             'body' => ['nullable', 'string'],
             'sections' => ['nullable', 'array'],
 
@@ -90,6 +92,7 @@ class JournalPageController extends Controller
         $coin = (int)($data['coin_reward'] ?? 0);
 
         $entry = null;
+        
 
         try {
             DB::transaction(function () use ($user, $data, $isToday, $xp, $coin, &$entry) {
@@ -106,6 +109,7 @@ class JournalPageController extends Controller
                 }
 
                 // content always editable
+                $entry->title = $data['title'] ?? null;
                 $entry->body = $data['body'] ?? null;
                 $entry->sections = $data['sections'] ?? null;
 
