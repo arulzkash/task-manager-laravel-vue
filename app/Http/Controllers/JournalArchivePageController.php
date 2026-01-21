@@ -35,22 +35,49 @@ class JournalArchivePageController extends Controller
             ->map(fn($e) => $e->date->toDateString())
             ->values();
 
-        // Optional: recent entries (buat “quick jump”)
-        $recent = JournalEntry::where('user_id', $user->id)
+        // Helper kecil buat bikin headline (server-side biar konsisten)
+        $makeHeadline = function (JournalEntry $e): string {
+            $text = '';
+
+            // prioritas: body
+            $text = trim((string)($e->body ?? ''));
+
+            // fallback: section pertama yang ada isi
+            if ($text === '') {
+                foreach (($e->sections ?? []) as $s) {
+                    $c = trim((string)($s['content'] ?? ''));
+                    if ($c !== '') {
+                        $text = $c;
+                        break;
+                    }
+                }
+            }
+
+            // bersihin newline & limit
+            $text = preg_replace("/\s+/", " ", $text);
+            return mb_strimwidth($text ?: '...', 0, 80, '...');
+        };
+
+        // Entries list untuk bulan ini (main UX)
+        $entries = JournalEntry::where('user_id', $user->id)
+            ->whereBetween('date', [$start, $end])
             ->orderByDesc('date')
-            ->limit(10)
-            ->get(['id', 'date', 'rewarded_at'])
+            ->get(['id', 'date', 'title', 'rewarded_at', 'body', 'sections'])
             ->map(fn($e) => [
                 'id' => $e->id,
                 'date' => $e->date->toDateString(),
+                'title' => trim((string)($e->title ?? '')) !== '' ? $e->title : $e->date->toDateString(),
+                'headline' => $makeHeadline($e),
                 'rewarded_at' => optional($e->rewarded_at)?->toISOString(),
-            ]);
+            ])
+            ->values();
+
 
         return Inertia::render('Journal/Archive', [
             'month' => $month,                 // YYYY-MM
             'todayKey' => $this->todayKey(),   // YYYY-MM-DD
             'filledDays' => $filledDays,       // array of YYYY-MM-DD
-            'recent' => $recent,               // optional
+            'entries' => $entries,
         ]);
     }
 }

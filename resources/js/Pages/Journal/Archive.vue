@@ -9,7 +9,7 @@ const props = defineProps({
     month: String, // YYYY-MM
     todayKey: String, // YYYY-MM-DD (Jakarta)
     filledDays: Array, // ["YYYY-MM-DD", ...]
-    recent: Array, // optional
+    entries: Array,
 });
 
 const filledSet = computed(() => new Set(props.filledDays || []));
@@ -179,23 +179,56 @@ const openDay = (dateKey) => {
             </div>
         </div>
 
-        <!-- Optional recent -->
-        <div v-if="(recent?.length || 0) > 0" class="rounded-xl border border-slate-700 bg-slate-800 p-4">
-            <div class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Recent entries</div>
-            <div class="space-y-2">
+        <!-- Entries list (main browsing) -->
+        <div class="rounded-xl border border-slate-700 bg-slate-800 p-4">
+            <div class="mb-3 flex items-center justify-between">
+                <div class="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Entries this month
+                </div>
+                <div class="text-xs text-slate-500">{{ entries?.length || 0 }} entries</div>
+            </div>
+
+            <div v-if="(entries?.length || 0) === 0" class="text-sm italic text-slate-500">
+                No entries this month yet.
+            </div>
+
+            <div v-else class="space-y-2">
                 <button
-                    v-for="r in recent"
-                    :key="r.id"
-                    @click="openDay(r.date)"
-                    class="flex w-full items-center justify-between rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2 text-left hover:bg-slate-900/50"
+                    v-for="e in entries"
+                    :key="e.id"
+                    @click="openDay(e.date)"
+                    class="w-full rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-3 text-left hover:bg-slate-900/50"
                 >
-                    <div class="font-mono text-sm text-slate-200">{{ r.date }}</div>
-                    <div class="text-xs text-slate-500">
-                        <span v-if="r.rewarded_at" class="text-emerald-300">rewarded</span>
-                        <span v-else class="text-slate-500">—</span>
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <div class="truncate text-sm font-bold text-slate-200">
+                                    {{ e.title }}
+                                </div>
+                                <span
+                                    v-if="e.date === todayKey"
+                                    class="rounded bg-indigo-500/15 px-2 py-0.5 text-[10px] font-bold text-indigo-200"
+                                >
+                                    Today
+                                </span>
+                            </div>
+                            <div class="mt-1 font-mono text-[11px] text-slate-500">
+                                {{ e.date }}
+                            </div>
+                            <div class="mt-1 truncate text-sm text-slate-400">
+                                {{ e.headline || '...' }}
+                            </div>
+                        </div>
+
+                        <div class="shrink-0 text-[11px] text-slate-500">
+                            <span v-if="e.rewarded_at" class="text-emerald-300">rewarded</span>
+                            <span v-else>-</span>
+                        </div>
                     </div>
                 </button>
             </div>
         </div>
+
+        
     </div>
 </template>
