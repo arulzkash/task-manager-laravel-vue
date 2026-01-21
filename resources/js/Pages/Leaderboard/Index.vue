@@ -380,7 +380,7 @@ const placeLore = (el) => {
     const vh = window.innerHeight || 640;
 
     const maxW = Math.min(320, vw - 16);
-    const approxH = 150;
+    const approxH = 60;
 
     const x = clamp(r.left + r.width / 2, 8 + maxW / 2, vw - 8 - maxW / 2);
 

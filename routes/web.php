@@ -15,6 +15,7 @@ use App\Http\Controllers\CompletionLogController;
 use App\Http\Controllers\CompletionLogPageController;
 use App\Http\Controllers\HabitController;
 use App\Http\Controllers\HabitPageController;
+use App\Http\Controllers\JournalPageController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\TimeBlockController;
 use App\Http\Controllers\TimeBlockPageController;
@@ -105,8 +106,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{timeBlock}', [TimeBlockController::class, 'destroy']);
     });
 
+    // LEADERBOARD
     Route::get('/leaderboard', [LeaderboardController::class, 'page']);
     Route::get('/api/leaderboard', [LeaderboardController::class, 'index']);
+
+    // JOURNAL
+    Route::get('/journal', [JournalPageController::class, 'index'])->name('journal');
+    Route::put('/journal', [JournalPageController::class, 'save'])->name('journal.save');
+    Route::match(['GET', 'HEAD'], '/journal/ping', fn() => response('', 204))->name('journal.ping');
 
     Route::get('/debug/badges', [BadgeDebugController::class, 'index']);
 });
