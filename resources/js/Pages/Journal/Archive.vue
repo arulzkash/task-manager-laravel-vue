@@ -102,15 +102,6 @@ const runSearch = debounce(() => {
 
 watch(searchQuery, () => runSearch());
 
-// --- derived maps / sets ---
-const filledSet = computed(() => new Set(props.filledDays || []));
-
-const entriesByDate = computed(() => {
-    const map = new Map();
-    for (const e of props.entries || []) map.set(e.date, e);
-    return map;
-});
-
 // --- quick filters (client-side) ---
 const filter = ref('all'); // all | fav | rewarded
 
@@ -119,6 +110,22 @@ const filteredEntries = computed(() => {
     if (filter.value === 'fav') return list.filter((e) => !!e.is_favorite);
     if (filter.value === 'rewarded') return list.filter((e) => !!e.rewarded_at);
     return list;
+});
+
+// --- derived maps / sets (respect filter for calendar) ---
+const calendarEntries = computed(() => filteredEntries.value);
+
+const calendarFilledSet = computed(() => {
+    if (filter.value === 'all' && !searchQuery.value) {
+        return new Set(props.filledDays || []);
+    }
+    return new Set(calendarEntries.value.map((e) => e.date));
+});
+
+const entriesByDate = computed(() => {
+    const map = new Map();
+    for (const e of calendarEntries.value) map.set(e.date, e);
+    return map;
 });
 
 const stats = computed(() => {
@@ -234,9 +241,11 @@ const clearSearch = () => {
                                 class="relative h-full w-full overflow-hidden rounded-lg border transition-all md:rounded-xl"
                                 :class="[
                                     c.dateKey === todayKey
-                                        ? 'border-sky-400/60 bg-sky-500/10 ring-1 ring-sky-400/30'
-                                        : filledSet.has(c.dateKey)
-                                            ? 'border-slate-600 bg-slate-800/60 hover:bg-slate-700/60'
+                                        ? (calendarFilledSet.has(c.dateKey)
+                                            ? 'border-sky-400/70 bg-sky-500/20 ring-2 ring-sky-400/40 shadow-[0_0_16px_rgba(56,189,248,0.25)]'
+                                            : 'border-sky-400/40 bg-slate-900/40 ring-1 ring-sky-400/20')
+                                        : calendarFilledSet.has(c.dateKey)
+                                            ? 'border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/15'
                                             : 'border-slate-800 bg-slate-950/20 hover:bg-slate-900/40',
                                 ]"
                             >
@@ -252,11 +261,6 @@ const clearSearch = () => {
                                     <div v-if="entriesByDate.get(c.dateKey)?.mood_emoji" class="text-lg md:text-2xl">
                                         {{ entriesByDate.get(c.dateKey).mood_emoji }}
                                     </div>
-                                    <div v-else-if="filledSet.has(c.dateKey)" class="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)] md:h-2 md:w-2"></div>
-                                </div>
-
-                                <div v-if="c.dateKey === todayKey" class="absolute bottom-1 left-1 rounded bg-sky-500/15 px-1 py-0.5 text-[8px] font-bold text-sky-200 md:bottom-2 md:left-2 md:px-2 md:text-[10px]">
-                                    Today
                                 </div>
                             </button>
                         </div>
