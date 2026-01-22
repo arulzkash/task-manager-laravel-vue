@@ -1,9 +1,11 @@
 <script setup>
-import { Head, useForm, router, Link } from '@inertiajs/vue3';
+import { Head, useForm, router, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { computed, onMounted, ref, watch, onBeforeUnmount, nextTick } from 'vue';
 import debounce from 'lodash/debounce';
+import LevelUpModal from '@/Components/Game/LevelUpModal.vue';
 import { useAudio } from '@/Composables/useAudio';
+import { useLevelUp } from '@/Composables/useLevelUp';
 
 defineOptions({ layout: AppLayout });
 
@@ -16,6 +18,9 @@ const props = defineProps({
 });
 
 const {playSfx} = useAudio();
+const page = usePage();
+const globalProfile = computed(() => page.props.auth.profile);
+const { showLevelUpModal } = useLevelUp(globalProfile, undefined, { delayMs: 0 });
 
 // ---------- Constants ----------
 const MOOD_OPTIONS = ['😴', '😐', '🙂', '😀', '🤩', '🔥', '🧠', '😵‍💫', '😢', '😡'];
@@ -664,6 +669,11 @@ onBeforeUnmount(() => {
                 </button>
             </div>
         </div>
+
+        <LevelUpModal
+            v-model="showLevelUpModal"
+            :current-level="globalProfile?.level_data?.current_level || 1"
+        />
     </div>
 </template>
 

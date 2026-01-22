@@ -1,11 +1,13 @@
 <script setup>
 import { useForm, router, Link, Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { watch, ref } from 'vue';
+import { watch, ref, computed } from 'vue';
 import XpProgressBar from '@/Components/Game/XpProgressBar.vue';
 import StatCard from '@/Components/Game/StatCard.vue';
+import LevelUpModal from '@/Components/Game/LevelUpModal.vue';
 import confetti from 'canvas-confetti';
 import { useAudio } from '@/Composables/useAudio';
+import { useLevelUp } from '@/Composables/useLevelUp';
 
 defineOptions({ layout: AppLayout });
 
@@ -182,47 +184,8 @@ const triggerConfetti = () => {
 };
 
 // --- LEVEL UP LOGIC ---
-const showLevelUpModal = ref(false);
-const previousLevel = ref(props.profile?.level_data?.current_level || 1);
-
-watch(
-    () => props.profile,
-    (newProfile) => {
-        if (!newProfile) return;
-        const newLevel = newProfile.level_data.current_level;
-        if (newLevel > previousLevel.value) {
-            setTimeout(() => {
-                showLevelUpModal.value = true;
-                triggerLevelUpConfetti();
-                playSfx('levelup');
-                previousLevel.value = newLevel;
-            }, 2500);
-        }
-    },
-    { deep: true }
-);
-
-const triggerLevelUpConfetti = () => {
-    const duration = 3000;
-    const end = Date.now() + duration;
-    (function frame() {
-        confetti({
-            particleCount: 5,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: ['#fbbf24', '#f59e0b', '#ef4444'],
-        });
-        confetti({
-            particleCount: 5,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: ['#3b82f6', '#8b5cf6', '#ec4899'],
-        });
-        if (Date.now() < end) requestAnimationFrame(frame);
-    })();
-};
+const profileRef = computed(() => props.profile);
+const { showLevelUpModal } = useLevelUp(profileRef);
 
 // Efek Tebasan Pedang (Cross Slash)
 const triggerSlashEffect = () => {
@@ -951,33 +914,10 @@ const getRankClass = (rank) => {
             </div>
         </div>
 
-        <div
-            v-if="showLevelUpModal"
-            class="animate-fade-in fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
-        >
-            <div class="relative text-center">
-                <div
-                    class="absolute inset-0 animate-pulse rounded-full bg-yellow-500 opacity-20 blur-[100px]"
-                ></div>
-                <h1
-                    class="animate-bounce-in relative z-10 bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-700 bg-clip-text text-8xl font-black text-transparent drop-shadow-[0_0_25px_rgba(234,179,8,0.8)] md:text-9xl"
-                >
-                    LEVEL UP!
-                </h1>
-                <div
-                    class="animate-slide-up relative z-10 mt-8 text-4xl font-bold uppercase tracking-widest text-white"
-                >
-                    You reached Level
-                    <span class="text-6xl text-yellow-400">{{ profile.level_data.current_level }}</span>
-                </div>
-                <button
-                    @click="showLevelUpModal = false"
-                    class="relative z-10 mt-12 transform rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-12 py-4 text-xl font-bold text-white shadow-[0_0_30px_rgba(99,102,241,0.6)] transition-all duration-300 hover:scale-105 hover:from-indigo-500 hover:to-purple-500"
-                >
-                    AWESOME!
-                </button>
-            </div>
-        </div>
+        <LevelUpModal
+            v-model="showLevelUpModal"
+            :current-level="profile?.level_data?.current_level || 1"
+        />
     </div>
 </template>
 
