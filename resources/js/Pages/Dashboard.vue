@@ -318,17 +318,17 @@ const onDragEnd = () => {
     <div class="mx-auto max-w-7xl space-y-8 p-4 text-gray-200 md:p-8">
         <section
             v-if="profile"
-            class="relative overflow-hidden rounded-3xl border border-slate-700 bg-slate-800 p-6 shadow-2xl"
+            class="relative overflow-hidden rounded-3xl border border-slate-700 bg-slate-800 p-6 shadow-2xl shadow-blue-500/20"
         >
             <div
-                class="absolute -right-24 -top-24 h-96 w-96 animate-pulse rounded-full bg-indigo-600 opacity-20 mix-blend-screen blur-[100px] filter"
+                class="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-500 opacity-25 mix-blend-screen blur-[100px] filter transition-opacity duration-700"
             ></div>
 
             <div class="relative z-10 grid grid-cols-1 items-center gap-8 md:grid-cols-12">
                 <div class="flex flex-col items-center justify-center md:col-span-3">
                     <div class="group relative">
                         <div
-                            class="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400 to-indigo-500 opacity-75 blur transition duration-500 group-hover:opacity-100"
+                            class="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-sky-400 opacity-75 blur transition duration-500 group-hover:opacity-100"
                         ></div>
                         <div
                             class="relative z-10 flex h-28 w-28 items-center justify-center rounded-full border-4 border-slate-700 bg-slate-900"
@@ -340,7 +340,7 @@ const onDragEnd = () => {
                             </span>
                         </div>
                         <div
-                            class="absolute -bottom-3 left-1/2 z-20 -translate-x-1/2 transform rounded-full border border-slate-600 bg-slate-900 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-indigo-400"
+                            class="absolute -bottom-3 left-1/2 z-20 -translate-x-1/2 transform rounded-full border border-slate-600 bg-slate-900 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-cyan-300"
                         >
                             Level
                         </div>
@@ -759,7 +759,7 @@ const onDragEnd = () => {
                                             class="cursor-pointer rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors hover:opacity-80"
                                             :class="
                                                 q.status === 'in_progress'
-                                                    ? 'animate-pulse border-indigo-700 bg-indigo-900 text-indigo-300'
+                                                    ? 'border-indigo-700 bg-indigo-900 text-indigo-300 ring-1 ring-indigo-500/40 shadow-[0_0_10px_rgba(99,102,241,0.2)]'
                                                     : 'border-slate-600 bg-slate-700 text-slate-300'
                                             "
                                         >
@@ -792,7 +792,7 @@ const onDragEnd = () => {
                                             class="flex items-center gap-1"
                                             :class="
                                                 q.due_date < today
-                                                    ? 'animate-pulse font-bold text-red-400'
+                                                    ? 'font-bold text-red-400 rounded bg-red-500/10 px-1'
                                                     : ''
                                             "
                                         >
