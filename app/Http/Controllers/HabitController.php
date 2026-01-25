@@ -4,9 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Habit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class HabitController extends Controller
 {
+    // --- HELPER UNTUK HAPUS CACHE ---
+    private function clearDashboardCache($user)
+    {
+        $today = now()->toDateString();
+        Cache::forget("dashboard:habits:{$user->id}:{$today}");
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -20,26 +28,21 @@ class HabitController extends Controller
             'end_date' => null,
         ]);
 
+        // INVALIDASI CACHE: Biar habit baru muncul
+        $this->clearDashboardCache($request->user());
+
         return redirect()->back();
     }
 
     public function toggleToday(Request $request, Habit $habit)
     {
-        // ownership check
         abort_unless($habit->user_id === $request->user()->id, 403);
 
-        // habit harus aktif dan sudah mulai
         $today = now()->toDateString();
 
-        if ($habit->start_date > $today) {
-            return redirect()->back();
-        }
+        if ($habit->start_date > $today) return redirect()->back();
+        if ($habit->end_date && $habit->end_date < $today) return redirect()->back();
 
-        if ($habit->end_date && $habit->end_date < $today) {
-            return redirect()->back();
-        }
-
-        // toggle entry (create kalau belum ada, delete kalau sudah ada)
         $entry = $request->user()->habitEntries()
             ->where('habit_id', $habit->id)
             ->whereDate('date', $today)
@@ -54,6 +57,9 @@ class HabitController extends Controller
             ]);
         }
 
+        // INVALIDASI CACHE: Biar status centang & streak update
+        $this->clearDashboardCache($request->user());
+
         return redirect()->back();
     }
 
@@ -66,9 +72,8 @@ class HabitController extends Controller
         ]);
 
         $date = $data['date'];
-
-        // batas valid: >= start_date, dan <= min(today, end_date kalau ada)
         $maxDate = now()->toDateString();
+        
         if ($habit->end_date && $habit->end_date < $maxDate) {
             $maxDate = $habit->end_date;
         }
@@ -90,6 +95,9 @@ class HabitController extends Controller
             ]);
         }
 
+        // INVALIDASI CACHE: Karena ubah tanggal lama bisa memutus/menyambung streak
+        $this->clearDashboardCache($request->user());
+
         return redirect()->back();
     }
 
@@ -97,13 +105,12 @@ class HabitController extends Controller
     {
         abort_unless($habit->user_id === $request->user()->id, 403);
 
-        if ($habit->end_date) {
-            return redirect()->back();
-        }
+        if ($habit->end_date) return redirect()->back();
 
-        $habit->update([
-            'end_date' => now()->toDateString(),
-        ]);
+        $habit->update(['end_date' => now()->toDateString()]);
+
+        // INVALIDASI CACHE: Biar habit hilang dari list aktif
+        $this->clearDashboardCache($request->user());
 
         return redirect()->back();
     }
@@ -112,13 +119,12 @@ class HabitController extends Controller
     {
         abort_unless($habit->user_id === $request->user()->id, 403);
 
-        if (is_null($habit->end_date)) {
-            return redirect()->back();
-        }
+        if (is_null($habit->end_date)) return redirect()->back();
 
-        $habit->update([
-            'end_date' => null,
-        ]);
+        $habit->update(['end_date' => null]);
+
+        // INVALIDASI CACHE: Biar habit muncul lagi
+        $this->clearDashboardCache($request->user());
 
         return redirect()->back();
     }

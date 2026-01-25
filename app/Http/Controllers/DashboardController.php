@@ -18,65 +18,76 @@ class DashboardController extends Controller
         // PROFILE
         $profile = $user->profile;
 
-        // HABIT
+
         $today = now()->toDateString();
         $journalTodayExists = JournalEntry::where('user_id', $user->id)
             ->whereDate('date', $today)
             ->exists();
 
-        $habits = $user->habits()
-            ->active($today)
-            ->orderBy('name')
-            ->get();
+        // HABIT
+        // HABIT CACHE KEY: Unik per user & per hari
+        // Kenapa per hari? Karena kalau ganti hari, status 'done_today' reset jadi false.
+        $habitCacheKey = "dashboard:habits:{$user->id}:{$today}";
 
-        $habitIds = $habits->pluck('id');
+        $habitsPayload = Cache::remember($habitCacheKey, 86400, function () use ($user, $today) {
+            // === LOGIC BERAT PINDAH KE SINI ===
 
-        $entriesByHabit = $user->habitEntries()
-            ->whereIn('habit_id', $habitIds)
-            ->whereDate('date', '<=', $today)
-            ->get()
-            ->groupBy('habit_id');
+            // 1. Ambil Habit Aktif
+            $habits = $user->habits()
+                ->active($today)
+                ->orderBy('name')
+                ->get();
 
-        $habitsPayload = $habits->map(function ($h) use ($entriesByHabit, $today) {
-            $dates = ($entriesByHabit[$h->id] ?? collect())
-                ->pluck('date')
-                ->map(fn($d) => (string) $d)
-                ->flip(); // jadi set buat lookup cepat
+            if ($habits->isEmpty()) return collect([]);
 
-            $isDoneToday = isset($dates[$today]);
+            $habitIds = $habits->pluck('id');
 
-            $streak = 0;
+            // 2. Ambil Log (Query Berat)
+            // Sekarang aman karena cuma jalan 1x sehari atau pas tombol dipencet
+            $entriesByHabit = $user->habitEntries()
+                ->whereIn('habit_id', $habitIds)
+                ->whereDate('date', '<=', $today)
+                ->get()
+                ->groupBy('habit_id');
 
-            // start cursor: today kalau done, kalau belum -> yesterday
-            $cursor = $isDoneToday ? now() : now()->subDay();
+            // 3. Hitung Streak (Looping Berat)
+            $processed = $habits->map(function ($h) use ($entriesByHabit, $today) {
+                $dates = ($entriesByHabit[$h->id] ?? collect())
+                    ->pluck('date')
+                    ->map(fn($d) => (string) substr($d, 0, 10)) // Pastikan format Y-m-d
+                    ->flip();
 
-            // kalau habit baru mulai hari ini dan belum done today, streak harus 0
-            if ($cursor->toDateString() < $h->start_date) {
+                $isDoneToday = isset($dates[$today]);
                 $streak = 0;
-            } else {
-                while (true) {
-                    $d = $cursor->toDateString();
-                    if (!isset($dates[$d])) break;
 
-                    $streak++;
-                    $cursor = $cursor->subDay();
+                // Logic hitung mundur streak
+                $cursor = $isDoneToday ? Carbon::parse($today) : Carbon::parse($today)->subDay();
 
-                    if ($cursor->toDateString() < $h->start_date) break;
+                if ($cursor->toDateString() >= $h->start_date) {
+                    while (true) {
+                        $d = $cursor->toDateString();
+                        if (!isset($dates[$d])) break;
+
+                        $streak++;
+                        $cursor->subDay();
+                        if ($cursor->toDateString() < $h->start_date) break;
+                    }
                 }
-            }
 
-            return [
-                'id' => $h->id,
-                'name' => $h->name,
-                'start_date' => $h->start_date,
-                'end_date' => $h->end_date,
-                'done_today' => $isDoneToday,
-                'streak' => $streak,
-            ];
+                return [
+                    'id' => $h->id,
+                    'name' => $h->name,
+                    'start_date' => $h->start_date,
+                    'end_date' => $h->end_date,
+                    'done_today' => $isDoneToday,
+                    'streak' => $streak,
+                ];
+            });
+
+            return $processed->sortByDesc('streak')->values();
         });
 
-        $habitsPayload = $habitsPayload->sortByDesc('streak')->values();
-
+        // Hitung summary dari payload yang sudah di-cache (Ringan)
         $doneCount = $habitsPayload->where('done_today', true)->count();
         $totalCount = $habitsPayload->count();
 
