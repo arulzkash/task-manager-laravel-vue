@@ -4,14 +4,19 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
 class LeaderboardController extends Controller
 {
+    // Konstanta Cache Keys & TTL
+    const CACHE_KEY_ROSTER = 'leaderboard:global_roster';
+    const CACHE_KEY_BADGES = 'leaderboard:global_badges';
+    const TTL_ROSTER = 600; // 10 Menit
+    
     public function page(Request $request)
     {
-
         $data = $this->buildLeaderboardData($request);
 
         return Inertia::render('Leaderboard/Index', [
@@ -25,35 +30,98 @@ class LeaderboardController extends Controller
         return response()->json($this->buildLeaderboardData($request));
     }
 
+    /**
+     * Core Logic: Hybrid Caching
+     * Menggabungkan Cached Roster (10m) + Realtime "Me" Data
+     */
     private function buildLeaderboardData(Request $request): array
     {
         $userId = $request->user()->id;
-        $limit = 50;
 
+        // 1. Ambil Global Roster (Cached 10m)
+        // Berisi Top 50 user dengan data statik 10 menit terakhir
+        $globalRoster = Cache::remember(self::CACHE_KEY_ROSTER, self::TTL_ROSTER, function () {
+            return $this->fetchGlobalRosterFromDB();
+        });
+
+        // 2. Ambil Global Badges (Cached 10m - Disamakan dengan Roster)
+        // Mapping badge untuk user-user yang ada di roster
+        $globalBadges = Cache::remember(self::CACHE_KEY_BADGES, self::TTL_ROSTER, function () use ($globalRoster) {
+            return $this->fetchBadgesForUsers($globalRoster->pluck('user_id')->toArray());
+        });
+
+        // 3. Ambil Realtime Data "Me" (Live - No Cache)
+        // Kita query ulang data diri sendiri (ringan, by ID) untuk menimpa data cache
+        $myRealtimeData = $this->fetchSingleUserStats($userId);
+        
+        // Ambil badge realtime untuk "Me" (karena badge mungkin baru saja didapat)
+        $myRealtimeBadges = $this->fetchBadgesForUsers([$userId])->get($userId);
+
+        // 4. Hydration / Assembly
+        // Gabungkan list cache dengan data realtime "Me"
+        $hydratedList = $globalRoster->map(function ($item) use ($userId, $globalBadges, $myRealtimeData, $myRealtimeBadges) {
+            // Logic Injection:
+            // Jika baris ini adalah "Saya", GANTI dengan data realtime
+            if ($item->user_id === $userId) {
+                // Pertahankan rank lama dari cache untuk referensi, tapi data isinya baru
+                $rankPreserved = $item->rank; 
+                $item = $myRealtimeData; 
+                $item->rank = $rankPreserved; // Pasang rank lama sementara (nanti disort ulang oleh Vue)
+                
+                $badges = $myRealtimeBadges;
+            } else {
+                // Untuk user lain, pakai badge dari cache
+                $badges = $globalBadges->get($item->user_id);
+            }
+
+            return $this->formatRow($item, $badges);
+        });
+
+        // 5. Siapkan object 'me' terpisah (untuk floating bar / highlight)
+        // Cek apakah "Me" sudah ada di dalam hydrated list?
+        $myFormattedData = $hydratedList->firstWhere('user.id', $userId);
+
+        if (!$myFormattedData) {
+            // Jika tidak masuk Top 50, format manual dari data realtime
+            $myFormattedData = $this->formatRow($myRealtimeData, $myRealtimeBadges);
+            $myFormattedData['rank'] = '-';
+        }
+
+        return [
+            'items' => $hydratedList->values()->toArray(),
+            'me' => $myFormattedData,
+        ];
+    }
+
+    // =========================================================================
+    // PRIVATE METHODS (Database Queries & Helpers)
+    // =========================================================================
+
+    /**
+     * Query Berat: Top 50 Global (Hanya jalan saat Cache Miss)
+     */
+    private function fetchGlobalRosterFromDB()
+    {
+        $limit = 50;
         $now = now();
         $today = $now->toDateString();
         $yesterday = $now->copy()->subDay()->toDateString();
-
-        // Batas toleransi "Ghost" (AFK)
         $ghostThresholdDate = $now->copy()->subDays(4)->toDateString();
+        $weekStart = $now->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
 
-        // 1. Ambil Timestamp TERAKHIR (Realtime detik)
+        // Subquery 1: Last Active Timestamp
         $lastActiveQuery = DB::table('quest_completions')
             ->select('user_id', DB::raw('MAX(completed_at) as last_active_at'))
             ->groupBy('user_id');
 
-
-        // 2. Hitung Konsistensi 7 Hari
-
-        $weekStart = $now->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
-
+        // Subquery 2: Active 7 Days
         $active7Query = DB::table('quest_completions')
             ->select('user_id', DB::raw('COUNT(DISTINCT DATE(completed_at)) as active_days_last_7d'))
             ->where('completed_at', '>=', $weekStart)
             ->groupBy('user_id');
 
-        // 3. Main Query
-        $query = DB::table('profiles')
+        // Main Query
+        $rankedList = DB::table('profiles')
             ->join('users', 'users.id', '=', 'profiles.user_id')
             ->leftJoinSub($lastActiveQuery, 'last_log', function ($join) {
                 $join->on('profiles.user_id', '=', 'last_log.user_id');
@@ -66,113 +134,162 @@ class LeaderboardController extends Controller
                 'users.name',
                 'profiles.streak_current',
                 'profiles.streak_best',
-                'profiles.last_active_date', // Tanggal (untuk status On Fire)
-                'last_log.last_active_at',   // Timestamp (untuk perhitungan "13h ago")
+                'profiles.last_active_date',
+                'last_log.last_active_at',
             ])
             ->selectRaw('COALESCE(active7.active_days_last_7d, 0) as active_days_last_7d')
-            // Logic Effective Streak (Ghost Buster)
+            // Logic Effective Streak
             ->selectRaw("
                 CASE 
                     WHEN profiles.last_active_date < ? THEN 0 
                     ELSE COALESCE(profiles.streak_current, 0) 
                 END as effective_streak
             ", [$ghostThresholdDate])
-            // Logic Status Badge
+            // Logic Status
             ->selectRaw("
                 CASE 
                     WHEN profiles.last_active_date = ? THEN 'On Fire'
                     WHEN profiles.last_active_date = ? THEN 'Pending'
                     ELSE 'Cold'
                 END as status
-            ", [$today, $yesterday]);
-
-        // Sorting Default (Current Streak)
-        $rankedList = $query
+            ", [$today, $yesterday])
             ->orderByDesc('effective_streak')
             ->orderByDesc('profiles.streak_best')
             ->orderByDesc('active_days_last_7d')
-            ->orderByDesc('last_active_at') // Tie breaker pakai timestamp detik
+            ->orderByDesc('last_active_at')
             ->limit($limit)
             ->get();
 
-        // Assign Rank Manual
+        // Pre-calculate Rank di dalam Cache
         $rankedList->transform(function ($item, $key) {
             $item->rank = $key + 1;
             return $item;
         });
 
-        // Cari Data "Saya"
-        $myRank = $rankedList->firstWhere('user_id', $userId);
+        return $rankedList;
+    }
 
-        if (!$myRank) {
-            // Kalau gak masuk top 50, query manual
-            $myRank = DB::table('profiles')
-                ->join('users', 'users.id', '=', 'profiles.user_id')
-                ->leftJoinSub($lastActiveQuery, 'last_log', function ($join) {
-                    $join->on('profiles.user_id', '=', 'last_log.user_id');
-                })
-                ->where('profiles.user_id', $userId)
-                ->select([
-                    'profiles.user_id',
-                    'users.name',
-                    'profiles.streak_current as effective_streak',
-                    'profiles.streak_best',
-                    'profiles.last_active_date',
-                    'last_log.last_active_at'
-                ])
-                ->addSelect(DB::raw("'Unknown' as status"))
-                ->first();
+    /**
+     * Query Ringan: Statistik 1 User (Realtime)
+     */
+    private function fetchSingleUserStats($userId)
+    {
+        $now = now(); // Selalu pakai waktu sekarang
+        $today = $now->toDateString();
+        $yesterday = $now->copy()->subDay()->toDateString();
+        $ghostThresholdDate = $now->copy()->subDays(4)->toDateString();
+        $weekStart = $now->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
 
-            if ($myRank) {
-                $myRank->rank = '-';
-                $myRank->active_days_last_7d = 0;
-            }
+        // Kita ulangi subquery logic tapi difilter by user_id agar efisien
+        $lastActiveQuery = DB::table('quest_completions')
+            ->select('user_id', DB::raw('MAX(completed_at) as last_active_at'))
+            ->where('user_id', $userId) // Filter dini
+            ->groupBy('user_id');
+
+        $active7Query = DB::table('quest_completions')
+            ->select('user_id', DB::raw('COUNT(DISTINCT DATE(completed_at)) as active_days_last_7d'))
+            ->where('user_id', $userId) // Filter dini
+            ->where('completed_at', '>=', $weekStart)
+            ->groupBy('user_id');
+
+        $data = DB::table('profiles')
+            ->join('users', 'users.id', '=', 'profiles.user_id')
+            ->leftJoinSub($lastActiveQuery, 'last_log', function ($join) {
+                $join->on('profiles.user_id', '=', 'last_log.user_id');
+            })
+            ->leftJoinSub($active7Query, 'active7', function ($join) {
+                $join->on('profiles.user_id', '=', 'active7.user_id');
+            })
+            ->where('profiles.user_id', $userId) // Filter utama
+            ->select([
+                'profiles.user_id',
+                'users.name',
+                'profiles.streak_current',
+                'profiles.streak_best',
+                'profiles.last_active_date',
+                'last_log.last_active_at',
+            ])
+            ->selectRaw('COALESCE(active7.active_days_last_7d, 0) as active_days_last_7d')
+            ->selectRaw("
+                CASE 
+                    WHEN profiles.last_active_date < ? THEN 0 
+                    ELSE COALESCE(profiles.streak_current, 0) 
+                END as effective_streak
+            ", [$ghostThresholdDate])
+            ->selectRaw("
+                CASE 
+                    WHEN profiles.last_active_date = ? THEN 'On Fire'
+                    WHEN profiles.last_active_date = ? THEN 'Pending'
+                    ELSE 'Cold'
+                END as status
+            ", [$today, $yesterday])
+            ->first();
+        
+        // Handle case jika user baru register dan belum ada di profiles/logs
+        if (!$data) {
+             // Fallback dummy object atau ambil user saja
+             $user = DB::table('users')->where('id', $userId)->first();
+             $data = (object) [
+                 'user_id' => $userId,
+                 'name' => $user->name ?? 'User',
+                 'streak_current' => 0,
+                 'streak_best' => 0,
+                 'active_days_last_7d' => 0,
+                 'last_active_at' => null,
+                 'effective_streak' => 0,
+                 'status' => 'Cold',
+                 'rank' => '-'
+             ];
         }
 
-        // --- BADGES ---
-        $visibleUserIds = $rankedList->pluck('user_id')->push($userId)->unique()->toArray();
-        $badges = DB::table('user_badges')
+        return $data;
+    }
+
+    /**
+     * Query Batch Badges
+     */
+    private function fetchBadgesForUsers(array $userIds)
+    {
+        if (empty($userIds)) return collect();
+
+        return DB::table('user_badges')
             ->join('badges', 'badges.id', '=', 'user_badges.badge_id')
-            ->whereIn('user_badges.user_id', $visibleUserIds)
+            ->whereIn('user_badges.user_id', $userIds)
             ->whereIn('badges.category', ['recovery', 'streak'])
             ->select('user_badges.user_id', 'badges.name', 'badges.category', 'badges.key', 'badges.description')
             ->orderBy('badges.id', 'desc')
             ->get()
             ->groupBy('user_id');
+    }
 
-        $mapFunction = function ($row) use ($badges) {
-            if (!$row) return null;
-            $badge = null;
-            if (isset($badges[$row->user_id])) {
-                $list = $badges[$row->user_id];
-
-                // prioritas streak, kalau gak ada baru recovery
-                $badge = $list->firstWhere('category', 'streak') ?? $list->firstWhere('category', 'recovery');
-            }
-
-            return [
-                'rank' => $row->rank,
-                'user' => [
-                    'id' => $row->user_id,
-                    'name' => $row->name,
-                ],
-                'status' => $row->status ?? 'Cold',
-                'streak_current' => (int) $row->effective_streak,
-                'streak_best' => (int) $row->streak_best,
-                'active_days_last_7d' => (int) ($row->active_days_last_7d ?? 0),
-                'last_active_at' => $row->last_active_at, // Ini yang penting buat time ago
-                'badge_top' => $badge ? [
-                    'name' => $badge->name,
-                    'category' => $badge->category,
-                    'key' => $badge->key,
-                    'description' => $badge->description,
-                ] : null,
-            ];
-        };
+    /**
+     * Formatting Logic (Standardisasi Output ke Vue)
+     */
+    private function formatRow($row, $badgeList)
+    {
+        $badge = null;
+        if ($badgeList && $badgeList->isNotEmpty()) {
+            // prioritas streak, kalau gak ada baru recovery
+            $badge = $badgeList->firstWhere('category', 'streak') ?? $badgeList->firstWhere('category', 'recovery');
+        }
 
         return [
-            'items' => $rankedList->map($mapFunction)->toArray(),
-            'me' => $mapFunction($myRank),
+            'rank' => $row->rank ?? '-',
+            'user' => [
+                'id' => $row->user_id,
+                'name' => $row->name,
+            ],
+            'status' => $row->status ?? 'Cold',
+            'streak_current' => (int) $row->effective_streak,
+            'streak_best' => (int) $row->streak_best,
+            'active_days_last_7d' => (int) ($row->active_days_last_7d ?? 0),
+            'last_active_at' => $row->last_active_at,
+            'badge_top' => $badge ? [
+                'name' => $badge->name,
+                'category' => $badge->category,
+                'key' => $badge->key,
+                'description' => $badge->description,
+            ] : null,
         ];
     }
 }
