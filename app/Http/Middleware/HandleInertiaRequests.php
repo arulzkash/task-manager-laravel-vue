@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\CacheKeys;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Illuminate\Support\Facades\Cache;
@@ -45,9 +46,12 @@ class HandleInertiaRequests extends Middleware
             return $shared;
         }
 
-        $profile = Cache::remember("nav_profile:{$user->id}", now()->addMinutes(10), function () use ($user) {
+        $dateKey = CacheKeys::todayJakarta();
+        $key = CacheKeys::navProfile($user->id, $dateKey);
+
+        $profile = Cache::remember($key, 86400, function () use ($user) {
             return $user->profile()
-                ->select(['id', 'user_id', 'coin_balance', 'xp_total'])
+                ->select(['id', 'user_id', 'coin_balance', 'xp_total', 'current_streak'])
                 ->first();
         });
 

@@ -38,6 +38,8 @@ class QuestController extends Controller
 
         $request->user()->quests()->create($data);
 
+        CacheBuster::onQuestMutate($request->user()->id);
+
         return redirect()->back();
     }
 
@@ -85,6 +87,7 @@ class QuestController extends Controller
             DB::update($sql, $bindings);
         });
 
+        CacheBuster::onQuestMutate($request->user()->id);
         return redirect()->back();
     }
 
@@ -232,7 +235,7 @@ class QuestController extends Controller
 
         $profile->save();
         // invalidate navbar profile cache
-        Cache::forget("nav_profile:{$request->user()->id}");
+        CacheBuster::onQuestMutate($request->user()->id);
 
         // 4. Badge Sync
         // (Pastikan BadgeService sudah ada logic cek streak_best)
@@ -262,6 +265,8 @@ class QuestController extends Controller
 
         $quest->update($data);
 
+        CacheBuster::onQuestMutate($request->user()->id);
+
         return redirect()->back();
     }
 
@@ -277,6 +282,8 @@ class QuestController extends Controller
         }
 
         $quest->delete();
+
+        CacheBuster::onQuestMutate($request->user()->id);
 
         return redirect()->back();
     }

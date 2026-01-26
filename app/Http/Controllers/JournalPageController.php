@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\JournalEntry;
 use App\Models\JournalTemplate;
+use App\Support\CacheBuster;
+use App\Support\CacheKeys;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -103,7 +105,7 @@ class JournalPageController extends Controller
 
 
         try {
-            DB::transaction(function () use ($user, $data, $isToday, $xp, $coin, &$entry) {
+            DB::transaction(function () use ($user, $data, $isToday, $xp, $coin, &$entry, &$touchedEconomy) {
                 // lock row to prevent concurrent reward double-spend
                 $entry = JournalEntry::where('user_id', $user->id)
                     ->whereDate('date', $data['date'])
@@ -159,7 +161,11 @@ class JournalPageController extends Controller
 
         // nvalidate hanya kalau ekonomi berubah
         if ($touchedEconomy) {
-            Cache::forget("nav_profile:{$user->id}");
+            CacheBuster::invalidateNavProfile($request->user()->id);
+        }
+
+        if ($data['date'] === CacheKeys::todayJakarta()) {
+            CacheBuster::onJournalSave($user->id, $data['date']);
         }
 
         // redirect balik ke date yang sama, supaya props.entry ke-load/update

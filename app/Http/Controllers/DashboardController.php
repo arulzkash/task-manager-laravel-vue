@@ -22,10 +22,15 @@ class DashboardController extends Controller
             ->first();
 
 
-        $today = now()->toDateString();
-        $journalTodayExists = JournalEntry::where('user_id', $user->id)
-            ->whereDate('date', $today)
-            ->exists();
+        $today = CacheKeys::todayJakarta();
+
+        $journalTodayExists = Cache::remember(
+            CacheKeys::dashboardJournalDone($user->id, $today),
+            86400,
+            fn() => JournalEntry::where('user_id', $user->id)
+                ->whereDate('date', $today)
+                ->exists()
+        );
 
         // HABIT
         // HABIT CACHE KEY: Unik per user & per hari
@@ -94,18 +99,23 @@ class DashboardController extends Controller
         $doneCount = $habitsPayload->where('done_today', true)->count();
         $totalCount = $habitsPayload->count();
 
+        $dateKey = CacheKeys::todayJakarta();
         // TIMEBLOCK
-        $todayBlocks = $user->timeBlocks()
-            ->whereDate('date', $today)
-            ->orderBy('start_time')
-            ->get()
-            ->map(fn($b) => [
-                'id' => $b->id,
-                'start_time' => substr($b->start_time, 0, 5),
-                'end_time' => substr($b->end_time, 0, 5),
-                'title' => $b->title,
-                'note' => $b->note,
-            ]);
+        $timeblocksKey = CacheKeys::dashboardTimeblocks($user->id, $dateKey);
+
+        $todayBlocks = Cache::remember($timeblocksKey, 86400, function () use ($user, $dateKey) {
+            return $user->timeBlocks()
+                ->whereDate('date', $dateKey)
+                ->orderBy('start_time')
+                ->get()
+                ->map(fn($b) => [
+                    'id' => $b->id,
+                    'start_time' => substr($b->start_time, 0, 5),
+                    'end_time' => substr($b->end_time, 0, 5),
+                    'title' => $b->title,
+                    'note' => $b->note,
+                ]);
+        });
 
         $now = now();
         $leaderboardData = [
@@ -114,7 +124,27 @@ class DashboardController extends Controller
             'message' => 'View Leaderboard'
         ];
 
-        $dateKey = CacheKeys::todayJakarta();
+
+        $activeQuestsKey = CacheKeys::dashboardActiveQuests($user->id, $dateKey);
+
+        $activeQuests = Cache::remember($activeQuestsKey, 86400, function () use ($user) {
+            return $user->quests()
+                ->active()
+                ->orderBy('position')
+                ->get([
+                    'id',
+                    'name',
+                    'status',
+                    'type',
+                    'xp_reward',
+                    'coin_reward',
+                    'due_date',
+                    'is_repeatable',
+                    'position'
+                ]);
+        });
+
+
         $globalRoster = Cache::get(CacheKeys::leaderboardRoster($dateKey));
 
         if ($globalRoster) {
@@ -149,7 +179,9 @@ class DashboardController extends Controller
         // --- BADGE SNIPPET ---
         // Fetch the "Top" badge (Highest ID usually means latest, 
 
-        $topBadge = Cache::remember(CacheKeys::dashboardTopBadge($user->id), 600, function () use ($user) {
+        $topBadgeKey = CacheKeys::dashboardTopBadge($user->id);
+
+        $topBadge = Cache::remember($topBadgeKey, 86400, function () use ($user) {
             return DB::table('user_badges')
                 ->join('badges', 'badges.id', '=', 'user_badges.badge_id')
                 ->where('user_badges.user_id', $user->id)
@@ -168,78 +200,10 @@ class DashboardController extends Controller
                 'done_today' => $doneCount,
                 'total' => $totalCount,
             ],
-            'activeQuests' => $user->quests()
-                ->active()
-                ->get(['id', 'name', 'type', 'status', 'xp_reward', 'coin_reward', 'due_date', 'is_repeatable', 'position']),
+            'activeQuests' => $activeQuests,
             'todayBlocks' => $todayBlocks,
             'leaderboardData' => $leaderboardData,
             'topBadge' => $topBadge,
         ]);
-    }
-
-
-    /**
-     * Helper: Query 1 User Stats (Copy logic dari LeaderboardController biar konsisten)
-     * Sangat ringan karena filter WHERE user_id
-     */
-    private function fetchSingleUserStats($userId)
-    {
-        $now = now();
-        $today = $now->toDateString();
-        $yesterday = $now->copy()->subDay()->toDateString();
-        $ghostThresholdDate = $now->copy()->subDays(4)->toDateString();
-        $weekStart = $now->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
-
-        $lastActiveQuery = DB::table('quest_completions')
-            ->select('user_id', DB::raw('MAX(completed_at) as last_active_at'))
-            ->where('user_id', $userId)
-            ->groupBy('user_id');
-
-        $active7Query = DB::table('quest_completions')
-            ->select('user_id', DB::raw('COUNT(DISTINCT DATE(completed_at)) as active_days_last_7d'))
-            ->where('user_id', $userId)
-            ->where('completed_at', '>=', $weekStart)
-            ->groupBy('user_id');
-
-        $data = DB::table('profiles')
-            ->join('users', 'users.id', '=', 'profiles.user_id')
-            ->leftJoinSub($lastActiveQuery, 'last_log', function ($join) {
-                $join->on('profiles.user_id', '=', 'last_log.user_id');
-            })
-            ->leftJoinSub($active7Query, 'active7', function ($join) {
-                $join->on('profiles.user_id', '=', 'active7.user_id');
-            })
-            ->where('profiles.user_id', $userId)
-            ->select([
-                'profiles.user_id',
-                'users.name',
-                'profiles.streak_current',
-                'profiles.streak_best',
-                'profiles.last_active_date',
-                'last_log.last_active_at',
-            ])
-            ->selectRaw('COALESCE(active7.active_days_last_7d, 0) as active_days_last_7d')
-            ->selectRaw("
-                CASE 
-                    WHEN profiles.last_active_date < ? THEN 0 
-                    ELSE COALESCE(profiles.streak_current, 0) 
-                END as effective_streak
-            ", [$ghostThresholdDate])
-            ->first();
-
-        // Handle jika user baru (belum ada profile) -> Return dummy object
-        if (!$data) {
-            $user = DB::table('users')->find($userId);
-            return (object) [
-                'user_id' => $userId,
-                'name' => $user->name ?? 'You',
-                'effective_streak' => 0,
-                'streak_best' => 0,
-                'active_days_last_7d' => 0,
-                'last_active_at' => null
-            ];
-        }
-
-        return $data;
     }
 }

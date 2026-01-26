@@ -26,8 +26,23 @@ class CacheKeys
         return "dashboard:top_badge:{$userId}";
     }
 
-    public static function navProfile(int $userId): string
+    public static function navProfile(int $userId, string $dateJakarta): string
     {
-        return "nav_profile:{$userId}";
+        return "nav_profile:{$userId}:{$dateJakarta}";
+    }
+
+    public static function dashboardActiveQuests(int $userId, string $dateJakarta): string
+    {
+        return "dashboard:active_quests:{$userId}:{$dateJakarta}";
+    }
+
+    public static function dashboardTimeblocks(int $userId, string $dateJakarta): string
+    {
+        return "dashboard:timeblocks:{$userId}:{$dateJakarta}";
+    }
+
+    public static function dashboardJournalDone(int $userId, string $dateJakarta): string
+    {
+        return "dashboard:journal_done:{$userId}:{$dateJakarta}";
     }
 }

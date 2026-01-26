@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TreasuryReward;
+use App\Support\CacheBuster;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Cache;
@@ -94,7 +95,7 @@ class TreasuryController extends Controller
             'note' => $data['note'] ?? null,
         ]);
 
-        Cache::forget("nav_profile:{$request->user()->id}");
+        CacheBuster::invalidateNavProfile($request->user()->id);
 
         return redirect()->back();
     }

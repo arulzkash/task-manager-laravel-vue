@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TimeBlock;
+use App\Support\CacheBuster;
 use Illuminate\Http\Request;
 
 class TimeBlockController extends Controller
@@ -33,6 +34,8 @@ class TimeBlockController extends Controller
             'note' => $data['note'] ?? null,
         ]);
 
+        CacheBuster::onTimeblockMutate($request->user()->id);
+
         return redirect()->back();
     }
 
@@ -62,6 +65,8 @@ class TimeBlockController extends Controller
             'note' => $data['note'] ?? null,
         ]);
 
+        CacheBuster::onTimeblockMutate($request->user()->id);
+
         return redirect()->back();
     }
 
@@ -70,6 +75,8 @@ class TimeBlockController extends Controller
         abort_unless($timeBlock->user_id === $request->user()->id, 403);
 
         $timeBlock->delete();
+
+        CacheBuster::onTimeblockMutate($request->user()->id);
 
         return redirect()->back();
     }

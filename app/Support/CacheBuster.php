@@ -6,6 +6,14 @@ use Illuminate\Support\Facades\Cache;
 
 class CacheBuster
 {
+    public static function onQuestMutate(int $userId): void
+    {
+        $dateKey = CacheKeys::todayJakarta();
+
+        // Dashboard: active quests list
+        Cache::forget(CacheKeys::dashboardActiveQuests($userId, $dateKey));
+    }
+
     public static function onQuestComplete(int $userId): void
     {
         $dateKey = CacheKeys::todayJakarta();
@@ -18,6 +26,26 @@ class CacheBuster
         Cache::forget(CacheKeys::dashboardTopBadge($userId));
 
         // navbar profile (coin/xp berubah)
-        Cache::forget(CacheKeys::navProfile($userId));
+        Cache::forget(CacheKeys::navProfile($userId, $dateKey));
+
+        // dashboard: active quests list (quest bisa keluar/masuk list)
+        Cache::forget(CacheKeys::dashboardActiveQuests($userId, $dateKey));
+    }
+
+    public static function onTimeblockMutate(int $userId): void
+    {
+        $dateKey = CacheKeys::todayJakarta();
+        Cache::forget(CacheKeys::dashboardTimeblocks($userId, $dateKey));
+    }
+
+    public static function onJournalSave(int $userId, string $dateYmd): void
+    {
+        Cache::forget(CacheKeys::dashboardJournalDone($userId, $dateYmd));
+    }
+
+    public static function invalidateNavProfile(int $userId): void
+    {
+        $dateKey = CacheKeys::todayJakarta();
+        Cache::forget(CacheKeys::navProfile($userId, $dateKey));
     }
 }
