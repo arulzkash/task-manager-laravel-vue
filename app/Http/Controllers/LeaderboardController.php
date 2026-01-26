@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CacheKeys;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -10,11 +11,8 @@ use Carbon\Carbon;
 
 class LeaderboardController extends Controller
 {
-    // Konstanta Cache Keys & TTL
-    const CACHE_KEY_ROSTER = 'leaderboard:global_roster';
-    const CACHE_KEY_BADGES = 'leaderboard:global_badges';
-    const TTL_ROSTER = 600; // 10 Menit
-    
+    const TTL_DAY = 86400; // 1 hari
+
     public function page(Request $request)
     {
         $data = $this->buildLeaderboardData($request);
@@ -37,24 +35,20 @@ class LeaderboardController extends Controller
     private function buildLeaderboardData(Request $request): array
     {
         $userId = $request->user()->id;
+        $dateKey = CacheKeys::todayJakarta();
 
-        // 1. Ambil Global Roster (Cached 10m)
-        // Berisi Top 50 user dengan data statik 10 menit terakhir
-        $globalRoster = Cache::remember(self::CACHE_KEY_ROSTER, self::TTL_ROSTER, function () {
+        $rosterKey = CacheKeys::leaderboardRoster($dateKey);
+        $badgesKey = CacheKeys::leaderboardBadges($dateKey);
+
+        $globalRoster = Cache::remember($rosterKey, self::TTL_DAY, function () {
             return $this->fetchGlobalRosterFromDB();
         });
 
-        // 2. Ambil Global Badges (Cached 10m - Disamakan dengan Roster)
-        // Mapping badge untuk user-user yang ada di roster
-        $globalBadges = Cache::remember(self::CACHE_KEY_BADGES, self::TTL_ROSTER, function () use ($globalRoster) {
+        $globalBadges = Cache::remember($badgesKey, self::TTL_DAY, function () use ($globalRoster) {
             return $this->fetchBadgesForUsers($globalRoster->pluck('user_id')->toArray());
         });
 
-        // 3. Ambil Realtime Data "Me" (Live - No Cache)
-        // Kita query ulang data diri sendiri (ringan, by ID) untuk menimpa data cache
         $myRealtimeData = $this->fetchSingleUserStats($userId);
-        
-        // Ambil badge realtime untuk "Me" (karena badge mungkin baru saja didapat)
         $myRealtimeBadges = $this->fetchBadgesForUsers([$userId])->get($userId);
 
         // 4. Hydration / Assembly
@@ -64,10 +58,10 @@ class LeaderboardController extends Controller
             // Jika baris ini adalah "Saya", GANTI dengan data realtime
             if ($item->user_id === $userId) {
                 // Pertahankan rank lama dari cache untuk referensi, tapi data isinya baru
-                $rankPreserved = $item->rank; 
-                $item = $myRealtimeData; 
+                $rankPreserved = $item->rank;
+                $item = $myRealtimeData;
                 $item->rank = $rankPreserved; // Pasang rank lama sementara (nanti disort ulang oleh Vue)
-                
+
                 $badges = $myRealtimeBadges;
             } else {
                 // Untuk user lain, pakai badge dari cache
@@ -224,22 +218,22 @@ class LeaderboardController extends Controller
                 END as status
             ", [$today, $yesterday])
             ->first();
-        
+
         // Handle case jika user baru register dan belum ada di profiles/logs
         if (!$data) {
-             // Fallback dummy object atau ambil user saja
-             $user = DB::table('users')->where('id', $userId)->first();
-             $data = (object) [
-                 'user_id' => $userId,
-                 'name' => $user->name ?? 'User',
-                 'streak_current' => 0,
-                 'streak_best' => 0,
-                 'active_days_last_7d' => 0,
-                 'last_active_at' => null,
-                 'effective_streak' => 0,
-                 'status' => 'Cold',
-                 'rank' => '-'
-             ];
+            // Fallback dummy object atau ambil user saja
+            $user = DB::table('users')->where('id', $userId)->first();
+            $data = (object) [
+                'user_id' => $userId,
+                'name' => $user->name ?? 'User',
+                'streak_current' => 0,
+                'streak_best' => 0,
+                'active_days_last_7d' => 0,
+                'last_active_at' => null,
+                'effective_streak' => 0,
+                'status' => 'Cold',
+                'rank' => '-'
+            ];
         }
 
         return $data;

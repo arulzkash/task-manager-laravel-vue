@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Carbon\Carbon;
 use App\Models\JournalEntry;
+use App\Support\CacheKeys;
 
 class DashboardController extends Controller
 {
@@ -16,7 +17,9 @@ class DashboardController extends Controller
         $user = $request->user();
 
         // PROFILE
-        $profile = $user->profile;
+        $profile = $user->profile()
+            ->select(['id', 'user_id', 'coin_balance', 'xp_total', 'current_streak'])
+            ->first();
 
 
         $today = now()->toDateString();
@@ -111,8 +114,8 @@ class DashboardController extends Controller
             'message' => 'View Leaderboard'
         ];
 
-        // 1. Ambil Global Roster (Cached 10m)
-        $globalRoster = Cache::get('leaderboard:global_roster'); // Returns Collection/Array of Objects
+        $dateKey = CacheKeys::todayJakarta();
+        $globalRoster = Cache::get(CacheKeys::leaderboardRoster($dateKey));
 
         if ($globalRoster) {
             // 2. Ambil Data Realtime Saya (1 Query Ringan - Point Get)
@@ -182,13 +185,15 @@ class DashboardController extends Controller
         // --- BADGE SNIPPET ---
         // Fetch the "Top" badge (Highest ID usually means latest, 
 
-        $topBadge = DB::table('user_badges')
-            ->join('badges', 'badges.id', '=', 'user_badges.badge_id')
-            ->where('user_badges.user_id', $user->id)
-            ->select('badges.name', 'badges.key', 'badges.description')
-            ->orderBy('user_badges.created_at', 'desc')
-            ->limit(1)
-            ->first();
+        $topBadge = Cache::remember(CacheKeys::dashboardTopBadge($user->id), 600, function () use ($user) {
+            return DB::table('user_badges')
+                ->join('badges', 'badges.id', '=', 'user_badges.badge_id')
+                ->where('user_badges.user_id', $user->id)
+                ->select('badges.name', 'badges.key', 'badges.description')
+                ->orderBy('user_badges.created_at', 'desc')
+                ->limit(1)
+                ->first();
+        });
 
         return Inertia::render('Dashboard', [
             'profile' => $profile,
@@ -201,7 +206,7 @@ class DashboardController extends Controller
             ],
             'activeQuests' => $user->quests()
                 ->active()
-                ->get(),
+                ->get(['id', 'name', 'type', 'status', 'xp_reward', 'coin_reward', 'due_date', 'is_repeatable', 'position']),
             'todayBlocks' => $todayBlocks,
             'leaderboardData' => $leaderboardData,
             'topBadge' => $topBadge,

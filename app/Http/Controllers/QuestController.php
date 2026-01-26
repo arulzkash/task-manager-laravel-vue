@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Quest;
 use App\Services\BadgeService;
+use App\Support\CacheBuster;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -236,6 +237,8 @@ class QuestController extends Controller
         // 4. Badge Sync
         // (Pastikan BadgeService sudah ada logic cek streak_best)
         app(BadgeService::class)->syncForUser($request->user());
+
+        CacheBuster::onQuestComplete($request->user()->id);
 
         return redirect()->back();
     }
