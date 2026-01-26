@@ -118,65 +118,29 @@ class DashboardController extends Controller
         $globalRoster = Cache::get(CacheKeys::leaderboardRoster($dateKey));
 
         if ($globalRoster) {
-            // 2. Ambil Data Realtime Saya (1 Query Ringan - Point Get)
-            $myRealtimeStats = $this->fetchSingleUserStats($user->id);
+            $roster = collect($globalRoster)->values();
 
-            // 3. Logic "Injection & Re-Sort" di Memori PHP
-            // Kita gabungkan user lain (dari cache) dengan data saya (realtime)
-            // Lalu kita sort ulang untuk tau posisi 'asli' saya detik ini.
+            $myIndex = $roster->search(fn($r) => (int)$r->user_id === (int)$user->id);
 
-            $rosterCollection = collect($globalRoster);
-
-            // Hapus entry saya yang lama (kalau ada di cache), ganti dengan yang baru
-            $rosterCollection = $rosterCollection->filter(fn($item) => $item->user_id !== $user->id);
-            $rosterCollection->push($myRealtimeStats);
-
-            // Sort Ulang (Sesuai logic Leaderboard)
-            $sortedRoster = $rosterCollection->sort(function ($a, $b) {
-                // Logic sort descending (Return 1 jika A < B, -1 jika A > B)
-                // Prioritas 1: Effective Streak
-                if (($b->effective_streak ?? 0) !== ($a->effective_streak ?? 0)) {
-                    return ($b->effective_streak ?? 0) <=> ($a->effective_streak ?? 0);
-                }
-                // Prioritas 2: Best Streak
-                if (($b->streak_best ?? 0) !== ($a->streak_best ?? 0)) {
-                    return ($b->streak_best ?? 0) <=> ($a->streak_best ?? 0);
-                }
-                // Prioritas 3: Active Days
-                if (($b->active_days_last_7d ?? 0) !== ($a->active_days_last_7d ?? 0)) {
-                    return ($b->active_days_last_7d ?? 0) <=> ($a->active_days_last_7d ?? 0);
-                }
-                // Prioritas 4: Last Active At (Siapa yang duluan aktif/selesai)
-                return strcmp($b->last_active_at ?? '', $a->last_active_at ?? '');
-            })->values();
-
-            // 4. Cari Posisi Saya Setelah Sort
-            $myIndex = $sortedRoster->search(fn($item) => $item->user_id === $user->id);
-
-            // Cek apakah saya masuk Top 50 setelah update realtime?
             if ($myIndex !== false && $myIndex < 50) {
-                $myRank = $myIndex + 1;
-                $leaderboardData['rank'] = $myRank;
+                $leaderboardData['rank'] = $myIndex + 1;
 
-                // Cari Rival (Orang di atas saya)
                 if ($myIndex > 0) {
-                    $rival = $sortedRoster[$myIndex - 1];
-                    $gap = ($rival->effective_streak ?? 0) - ($myRealtimeStats->effective_streak ?? 0);
+                    $me = $roster[$myIndex];
+                    $rival = $roster[$myIndex - 1];
 
                     $leaderboardData['rival'] = [
                         'name' => $rival->name,
-                        'gap' => $gap + 1,
+                        'gap' => (($rival->effective_streak ?? 0) - ($me->effective_streak ?? 0)) + 1,
                     ];
                 } else {
-                    // Rank 1
                     $leaderboardData['rival'] = [
                         'name' => 'No one',
                         'gap' => 0,
-                        'is_king' => true
+                        'is_king' => true,
                     ];
                 }
             } else {
-                // Masih di luar Top 50
                 $leaderboardData['rank'] = '50+';
                 $leaderboardData['message'] = 'Keep grinding to enter top 50!';
             }

@@ -40,45 +40,42 @@ class LeaderboardController extends Controller
         $rosterKey = CacheKeys::leaderboardRoster($dateKey);
         $badgesKey = CacheKeys::leaderboardBadges($dateKey);
 
+        // Cache roster 1 hari (tapi akan di-forget setiap ada complete quest)
         $globalRoster = Cache::remember($rosterKey, self::TTL_DAY, function () {
             return $this->fetchGlobalRosterFromDB();
         });
 
+        // Cache badges 1 hari (ikut invalidate bareng roster)
         $globalBadges = Cache::remember($badgesKey, self::TTL_DAY, function () use ($globalRoster) {
             return $this->fetchBadgesForUsers($globalRoster->pluck('user_id')->toArray());
         });
 
-        $myRealtimeData = $this->fetchSingleUserStats($userId);
-        $myRealtimeBadges = $this->fetchBadgesForUsers([$userId])->get($userId);
-
-        // 4. Hydration / Assembly
-        // Gabungkan list cache dengan data realtime "Me"
-        $hydratedList = $globalRoster->map(function ($item) use ($userId, $globalBadges, $myRealtimeData, $myRealtimeBadges) {
-            // Logic Injection:
-            // Jika baris ini adalah "Saya", GANTI dengan data realtime
-            if ($item->user_id === $userId) {
-                // Pertahankan rank lama dari cache untuk referensi, tapi data isinya baru
-                $rankPreserved = $item->rank;
-                $item = $myRealtimeData;
-                $item->rank = $rankPreserved; // Pasang rank lama sementara (nanti disort ulang oleh Vue)
-
-                $badges = $myRealtimeBadges;
-            } else {
-                // Untuk user lain, pakai badge dari cache
-                $badges = $globalBadges->get($item->user_id);
-            }
-
+        // Hydrate rows (NO realtime "me")
+        $hydratedList = $globalRoster->map(function ($item) use ($globalBadges) {
+            $badges = $globalBadges->get($item->user_id);
             return $this->formatRow($item, $badges);
         });
 
-        // 5. Siapkan object 'me' terpisah (untuk floating bar / highlight)
-        // Cek apakah "Me" sudah ada di dalam hydrated list?
+        // 'me' object: cukup cari dari hydratedList
         $myFormattedData = $hydratedList->firstWhere('user.id', $userId);
 
         if (!$myFormattedData) {
-            // Jika tidak masuk Top 50, format manual dari data realtime
-            $myFormattedData = $this->formatRow($myRealtimeData, $myRealtimeBadges);
-            $myFormattedData['rank'] = '-';
+            // kalau user tidak masuk top 50, bikin object minimal (tanpa query DB)
+            $meUser = $request->user();
+
+            $myFormattedData = [
+                'rank' => '-',
+                'user' => [
+                    'id' => $meUser->id,
+                    'name' => $meUser->name,
+                ],
+                'status' => 'Cold',
+                'streak_current' => 0,
+                'streak_best' => 0,
+                'active_days_last_7d' => 0,
+                'last_active_at' => null,
+                'badge_top' => null,
+            ];
         }
 
         return [
@@ -86,6 +83,7 @@ class LeaderboardController extends Controller
             'me' => $myFormattedData,
         ];
     }
+
 
     // =========================================================================
     // PRIVATE METHODS (Database Queries & Helpers)
@@ -166,78 +164,6 @@ class LeaderboardController extends Controller
     /**
      * Query Ringan: Statistik 1 User (Realtime)
      */
-    private function fetchSingleUserStats($userId)
-    {
-        $now = now(); // Selalu pakai waktu sekarang
-        $today = $now->toDateString();
-        $yesterday = $now->copy()->subDay()->toDateString();
-        $ghostThresholdDate = $now->copy()->subDays(4)->toDateString();
-        $weekStart = $now->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
-
-        // Kita ulangi subquery logic tapi difilter by user_id agar efisien
-        $lastActiveQuery = DB::table('quest_completions')
-            ->select('user_id', DB::raw('MAX(completed_at) as last_active_at'))
-            ->where('user_id', $userId) // Filter dini
-            ->groupBy('user_id');
-
-        $active7Query = DB::table('quest_completions')
-            ->select('user_id', DB::raw('COUNT(DISTINCT DATE(completed_at)) as active_days_last_7d'))
-            ->where('user_id', $userId) // Filter dini
-            ->where('completed_at', '>=', $weekStart)
-            ->groupBy('user_id');
-
-        $data = DB::table('profiles')
-            ->join('users', 'users.id', '=', 'profiles.user_id')
-            ->leftJoinSub($lastActiveQuery, 'last_log', function ($join) {
-                $join->on('profiles.user_id', '=', 'last_log.user_id');
-            })
-            ->leftJoinSub($active7Query, 'active7', function ($join) {
-                $join->on('profiles.user_id', '=', 'active7.user_id');
-            })
-            ->where('profiles.user_id', $userId) // Filter utama
-            ->select([
-                'profiles.user_id',
-                'users.name',
-                'profiles.streak_current',
-                'profiles.streak_best',
-                'profiles.last_active_date',
-                'last_log.last_active_at',
-            ])
-            ->selectRaw('COALESCE(active7.active_days_last_7d, 0) as active_days_last_7d')
-            ->selectRaw("
-                CASE 
-                    WHEN profiles.last_active_date < ? THEN 0 
-                    ELSE COALESCE(profiles.streak_current, 0) 
-                END as effective_streak
-            ", [$ghostThresholdDate])
-            ->selectRaw("
-                CASE 
-                    WHEN profiles.last_active_date = ? THEN 'On Fire'
-                    WHEN profiles.last_active_date = ? THEN 'Pending'
-                    ELSE 'Cold'
-                END as status
-            ", [$today, $yesterday])
-            ->first();
-
-        // Handle case jika user baru register dan belum ada di profiles/logs
-        if (!$data) {
-            // Fallback dummy object atau ambil user saja
-            $user = DB::table('users')->where('id', $userId)->first();
-            $data = (object) [
-                'user_id' => $userId,
-                'name' => $user->name ?? 'User',
-                'streak_current' => 0,
-                'streak_best' => 0,
-                'active_days_last_7d' => 0,
-                'last_active_at' => null,
-                'effective_streak' => 0,
-                'status' => 'Cold',
-                'rank' => '-'
-            ];
-        }
-
-        return $data;
-    }
 
     /**
      * Query Batch Badges
