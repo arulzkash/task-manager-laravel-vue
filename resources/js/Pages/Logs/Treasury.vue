@@ -2,6 +2,7 @@
 import { Link, useForm, Head } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Pagination from '@/Components/Pagination.vue';
 
 defineOptions({ layout: AppLayout });
 
@@ -411,22 +412,7 @@ const dateTone = (dateKey) => {
             </div>
         </div>
 
-        <div v-if="logs.links.length > 3" class="flex justify-center pt-8">
-            <div class="flex gap-1 rounded-lg border border-slate-700 bg-slate-800 p-1">
-                <Link
-                    v-for="(link, k) in logs.links"
-                    :key="k"
-                    :href="link.url || ''"
-                    v-html="link.label"
-                    class="rounded-md px-3 py-2 text-xs font-medium transition-colors"
-                    :class="{
-                        'bg-yellow-600 text-white shadow': link.active,
-                        'text-slate-400 hover:bg-slate-700 hover:text-white': !link.active && link.url,
-                        'cursor-not-allowed text-slate-600 opacity-50': !link.url,
-                    }"
-                />
-            </div>
-        </div>
+        <Pagination :meta="logs" />
     </div>
 </template>
 

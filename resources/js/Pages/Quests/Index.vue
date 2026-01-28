@@ -7,6 +7,7 @@ import LevelUpModal from '@/Components/Game/LevelUpModal.vue';
 import confetti from 'canvas-confetti';
 import { useAudio } from '@/Composables/useAudio';
 import { useLevelUp } from '@/Composables/useLevelUp';
+import Pagination from '@/Components/Pagination.vue';
 
 defineOptions({ layout: AppLayout });
 
@@ -457,22 +458,7 @@ const formatStatus = (s) => s.replace('_', ' ').toUpperCase();
             </div>
         </div>
 
-        <div v-if="quests.links.length > 3" class="mt-8 flex justify-center gap-2">
-            <Component
-                v-for="(link, k) in quests.links"
-                :key="k"
-                :is="link.url ? Link : 'span'"
-                :href="link.url"
-                v-html="link.label"
-                class="rounded border px-3 py-1 text-sm transition-colors"
-                :class="{
-                    'border-indigo-500 bg-indigo-600 text-white': link.active,
-                    'border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700':
-                        !link.active && link.url,
-                    'border-transparent text-slate-600 opacity-50': !link.url,
-                }"
-            />
-        </div>
+        <Pagination :meta="quests" />
 
         <div
             v-if="editingQuest"

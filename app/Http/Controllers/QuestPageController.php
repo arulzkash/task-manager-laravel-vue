@@ -46,7 +46,7 @@ class QuestPageController extends Controller
         $query->orderBy($sort, $dir);
 
         return Inertia::render('Quests/Index', [
-            'quests' => $query->paginate(20)->withQueryString(),
+            'quests' => $query->paginate(20)->onEachSide(1)->withQueryString(),
             'filters' => [
                 'search' => $request->query('search', ''),
                 'status' => $request->query('status', ''),

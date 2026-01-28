@@ -68,7 +68,7 @@ class CompletionLogPageController extends Controller
 
 
         return Inertia::render('Logs/Completions', [
-            'logs' => $query->paginate(20)->withQueryString(),
+            'logs' => $query->paginate(20)->onEachSide(1)->withQueryString(),
             'filters' => [
                 'period' => $period,
                 'date' => $date ?? '',

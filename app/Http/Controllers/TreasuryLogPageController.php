@@ -74,7 +74,7 @@ class TreasuryLogPageController extends Controller
 
 
         return Inertia::render('Logs/Treasury', [
-            'logs' => $query->paginate(20)->withQueryString(),
+            'logs' => $query->paginate(20)->onEachSide(1)->withQueryString(),
             'filters' => [
                 'period' => $period,
                 'date' => $date ?? '',
