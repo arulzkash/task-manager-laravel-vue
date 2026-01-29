@@ -24,6 +24,7 @@ class QuestController extends Controller
             'is_repeatable' => ['required', 'boolean'],
         ]);
 
+        // $data['is_repeatable'] = $request->boolean('is_repeatable');
         $data['is_repeatable'] = $request->boolean('is_repeatable');
 
         if ($data['is_repeatable']) {
@@ -327,7 +328,7 @@ class QuestController extends Controller
             'due_date' => ['nullable', 'date'],
             'is_repeatable' => ['required', 'boolean'],
         ]);
-
+        
         $data['is_repeatable'] = $request->boolean('is_repeatable');
         $data['due_date'] = $request->input('due_date') ?: null;
 
