@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Support\CacheBuster;
+use App\Support\CacheKeys;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,6 +39,15 @@ class ProfileController extends Controller
         }
 
         $request->user()->save();
+
+        // INVALIDATE CACHE: User data berubah (name/email)
+        $userId = $request->user()->id;
+        $dateKey = CacheKeys::todayJakarta();
+
+        // Invalidate nav user cache (untuk name & email)
+        Cache::forget("nav_user:{$userId}:{$dateKey}");
+
+        CacheBuster::invalidateNavUser($userId);
 
         return Redirect::route('profile.edit');
     }

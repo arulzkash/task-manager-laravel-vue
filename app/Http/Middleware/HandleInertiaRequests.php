@@ -6,6 +6,9 @@ use App\Support\CacheKeys;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use App\Models\Profile;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -29,7 +32,6 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>
      */
-
     public function share(Request $request): array
     {
         $shared = [
@@ -40,21 +42,38 @@ class HandleInertiaRequests extends Middleware
             ],
         ];
 
-        $user = $request->user();
+        // OPTIMASI: Cek auth dari session, TIDAK query database
+        if (! Auth::check()) {
+            return $shared;
+        }
+
+        $userId = Auth::id(); // Dari session, NO DB QUERY
+
+        // OPTIMASI: Cache user data (name & email jarang berubah)
+        // Cache per hari karena jarang update, tapi bisa di-invalidate manual
+        $dateKey = CacheKeys::todayJakarta();
+        $userCacheKey = CacheKeys::navUser($userId, $dateKey);
+
+        $user = Cache::remember($userCacheKey, 86400, function () use ($userId) {
+            return User::select(['id', 'name', 'email'])
+                ->find($userId);
+        });
 
         if (! $user) {
             return $shared;
         }
 
-        $dateKey = CacheKeys::todayJakarta();
-        $key = CacheKeys::navProfile($user->id, $dateKey);
+        // OPTIMASI: Cache profile menggunakan CacheKeys yang sudah ada
+        // Ini sudah di-invalidate otomatis di CacheBuster::onQuestComplete()
+        $profileCacheKey = CacheKeys::navProfile($userId, $dateKey);
 
-        $profile = Cache::remember($key, 86400, function () use ($user) {
-            return $user->profile()
-                ->select(['id', 'user_id', 'coin_balance', 'xp_total', 'current_streak'])
+        $profile = Cache::remember($profileCacheKey, 86400, function () use ($userId) {
+            // PENTING: Query langsung ke Profile, BUKAN pakai relationship
+            // Ini menghindari Laravel load relationship yang bisa trigger query tambahan
+            return Profile::select(['id', 'user_id', 'coin_balance', 'xp_total', 'current_streak'])
+                ->where('user_id', $userId)
                 ->first();
         });
-
 
         $shared['auth'] = [
             'user' => $user->only(['id', 'name', 'email']),

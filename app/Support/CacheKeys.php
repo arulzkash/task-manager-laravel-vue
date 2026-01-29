@@ -31,6 +31,11 @@ class CacheKeys
         return "nav_profile:{$userId}:{$dateJakarta}";
     }
 
+    public static function navUser(int $userId, string $dateJakarta): string
+    {
+        return "nav_user:{$userId}:{$dateJakarta}";
+    }
+
     public static function dashboardActiveQuests(int $userId, string $dateJakarta): string
     {
         return "dashboard:active_quests:{$userId}:{$dateJakarta}";

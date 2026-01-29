@@ -48,4 +48,9 @@ class CacheBuster
         $dateKey = CacheKeys::todayJakarta();
         Cache::forget(CacheKeys::navProfile($userId, $dateKey));
     }
+    public static function invalidateNavUser(int $userId): void
+    {
+        $dateKey = CacheKeys::todayJakarta();
+        Cache::forget(CacheKeys::navUser($userId, $dateKey));
+    }
 }
