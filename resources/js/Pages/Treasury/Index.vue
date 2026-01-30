@@ -335,10 +335,11 @@ const triggerCoinSound = () => {
                         <div>
                             <div class="text-xs text-slate-500">Total Cost</div>
                             <div
-                                class="font-mono text-xl font-bold"
+                                class="flex items-center gap-1 font-mono text-xl font-bold"
                                 :class="canAfford ? 'text-white' : 'text-red-400'"
                             >
-                                🪙 {{ totalCost }}
+                                <CoinIcon cls="w-5 h-5 drop-shadow-[0_0_6px_rgba(234,179,8,0.45)]" />
+                                {{ totalCost }}
                             </div>
                         </div>
                         <div class="text-right">
